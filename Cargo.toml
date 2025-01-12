@@ -13,7 +13,9 @@ keywords = ["cargo", "binlist", "version", "plugin", "cli"]
 [dependencies]
 anyhow = "1.0.95"
 clap = { version = "4.5.26", features = ["derive"] }
-crates_io_api = "0.11.0"
+crates_io_api = { version = "0.11.0", default-features = false, features = [
+    "rustls",
+] }
 log = "0.4"
 rayon = "1.10.0"
 semver = "1.0.24"
