@@ -8,7 +8,7 @@ use semver::Version;
 use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
 
 /// Function to parse the output of `cargo install --list`
-pub fn parse_cargo_list_output(output: &str) -> Vec<(String, Version, Version)> {
+pub fn parse_cargo_output(output: &str) -> Vec<(String, Version, Version)> {
     let lines = output.lines().collect::<Vec<_>>();
 
     lines
@@ -25,7 +25,7 @@ pub fn parse_cargo_list_output(output: &str) -> Vec<(String, Version, Version)> 
 }
 
 /// Helper function to parse a package line (e.g., "cargo-binstall v1.10.18:")
-fn parse_package_line(line: &str) -> anyhow::Result<(String, Version)> {
+pub fn parse_package_line(line: &str) -> anyhow::Result<(String, Version)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() == 2
         && parts
