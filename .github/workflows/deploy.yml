@@ -1,8 +1,8 @@
 name: release
 on:
   push:
-    # tags:
-    #   - "*.*.*"
+    tags:
+      - "*.*.*"
 jobs:
   create-windows-binaries:
     runs-on: windows-latest
