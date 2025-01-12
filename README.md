@@ -12,12 +12,6 @@
 cargo install cargo-binlist
 ```
 
-or with `cargo binstall`:
-
-```sh
-cargo binstall cargo-binlist
-```
-
 ## Usage
 
 ```sh
