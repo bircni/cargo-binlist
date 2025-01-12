@@ -3,11 +3,25 @@ version = 2
 private = { ignore = true }
 confidence-threshold = 0.93
 allow = [
-    "Apache-2.0",  # https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
-    "MIT",         # https://tldrlegal.com/license/mit-license
-    "Unicode-3.0", # https://spdx.org/licenses/Unicode-3.0.0.html
+    "Apache-2.0",   # https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
+    "BSD-3-Clause", # https://tldrlegal.com/license/bsd-3-clause-license-(revised)
+    "ISC",          # https://tldrlegal.com/license/-isc-license
+    "MIT",          # https://tldrlegal.com/license/mit-license
+    "MPL-2.0",      # https://tldrlegal.com/license/mozilla-public-license-2.0-(mpl-2)
+    "OpenSSL",      # https://www.openssl.org/source/license.html
+    "Unicode-3.0",  # https://spdx.org/licenses/Unicode-3.0.0.html
 ]
 exceptions = []
 
 [bans]
 multiple-versions = "allow"
+deny = [
+    { name = "cmake", reason = "It has hurt me too much" },
+    { name = "openssl-sys", reason = "Use rustls" },
+    { name = "openssl", reason = "Use rustls" },
+]
+
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
