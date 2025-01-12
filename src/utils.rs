@@ -48,10 +48,7 @@ pub fn parse_package_line(line: &str) -> anyhow::Result<(String, Version)> {
 }
 
 pub fn get_latest_version(crate_name: &str) -> anyhow::Result<Version> {
-    let client = SyncClient::new(
-        "cargo-binlist (help@my_bot.com)",
-        Duration::from_millis(1000),
-    )?;
+    let client = SyncClient::new("cargo-binlist", Duration::from_millis(1000))?;
     log::debug!("Fetching latest version for {}", crate_name);
     let cr = client.get_crate(crate_name)?;
     let version = Version::parse(&cr.crate_data.max_version)?;
