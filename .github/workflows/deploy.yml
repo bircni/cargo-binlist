@@ -1,13 +1,20 @@
 name: release
 on:
   push:
-    tags:
-      - "*.*.*"
+    # tags:
+    #   - "*.*.*"
 jobs:
   create-windows-binaries:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
       - name: Build cargo-binlist
         run: |
@@ -52,6 +59,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Install musl
+        if: contains(matrix.target, 'linux-musl')
+        run: |
+          sudo apt-get install musl-tools
+
       - name: Build cargo-binlist
         run: |
           cargo build --release --target ${{ matrix.target }}
@@ -87,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Install Rust stable
         uses: actions-rs/toolchain@v1
