@@ -23,7 +23,7 @@ impl Cli {
         let mut uptodate = 0;
 
         log::info!("Installed Cargo packages and their versions:");
-        for (package, version, latest) in utils::parse_cargo_list_output(&cargo_bins) {
+        for (package, version, latest) in utils::parse_cargo_output(&cargo_bins) {
             match version.cmp(&latest) {
                 Ordering::Less => {
                     newer_available.push((package, version, latest));

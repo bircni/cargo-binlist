@@ -7,6 +7,8 @@ use clap::Parser as _;
 use cli::Cli;
 
 mod cli;
+#[cfg(test)]
+mod test;
 mod utils;
 
 fn main() {
