@@ -2,7 +2,7 @@
 name = "cargo-binlist"
 description = "List all installed binaries with cargo and their versions"
 repository = "https://github.com/bircni/cargo-binlist"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["bircni"]
 edition = "2021"
 license = "MIT"
@@ -11,14 +11,14 @@ categories = ["development-tools::cargo-plugins"]
 keywords = ["cargo", "binlist", "version", "plugin", "cli"]
 
 [dependencies]
-anyhow = "1.0.95"
-clap = { version = "4.5.26", features = ["derive"] }
-crates_io_api = { version = "0.11.0", default-features = false, features = [
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+crates_io_api = { version = "0.11", default-features = false, features = [
     "rustls",
 ] }
 log = "0.4"
-rayon = "1.10.0"
-semver = "1.0.24"
+rayon = "1.10"
+semver = "1"
 simplelog = "0.12"
 
 [lints.rust]
