@@ -2,7 +2,7 @@
 name = "cargo-binlist"
 description = "List all installed binaries with cargo and their versions"
 repository = "https://github.com/bircni/cargo-binlist"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["bircni"]
 edition = "2021"
 license = "MIT"
