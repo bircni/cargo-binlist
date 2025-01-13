@@ -1,3 +1,4 @@
+#![expect(clippy::unwrap_used, reason = "unwrap is used for testing purposes")]
 use semver::Version;
 
 use crate::{
@@ -45,7 +46,7 @@ fn test_parse_package_line() {
 
 #[test]
 fn test_packageinfo() {
-    let mut pkg = PackageInfo::new("serde".to_string(), Version::new(0, 0, 1));
+    let mut pkg = PackageInfo::new("serde".to_owned(), Version::new(0, 0, 1));
     let latest = pkg.latest_version().unwrap();
     assert!(latest > pkg.version);
     pkg.set_info(&latest);
@@ -64,18 +65,16 @@ fn test_cli_run() {
 
 #[test]
 fn test_cli_update() {
-    let pkgs = vec![];
-
-    assert!(utils::update(&pkgs).is_ok());
+    utils::update(&[]).unwrap();
 }
 
 #[test]
 fn test_version_occurrences() {
     let pkgs = vec![
-        PackageInfo::new("cargo-binstall".to_string(), Version::new(1, 10, 18)),
-        PackageInfo::new("cargo-bloat".to_string(), Version::new(0, 12, 1)),
-        PackageInfo::new("cargo-deny".to_string(), Version::new(0, 16, 1)),
-        PackageInfo::new("cargo-edit".to_string(), Version::new(0, 13, 0)),
+        PackageInfo::new("cargo-binstall".to_owned(), Version::new(1, 10, 18)),
+        PackageInfo::new("cargo-bloat".to_owned(), Version::new(0, 12, 1)),
+        PackageInfo::new("cargo-deny".to_owned(), Version::new(0, 16, 1)),
+        PackageInfo::new("cargo-edit".to_owned(), Version::new(0, 13, 0)),
     ];
 
     utils::version_occurrences(&pkgs);

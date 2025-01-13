@@ -35,3 +35,26 @@ perf = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
 suspicious = { level = "warn", priority = -1 }
 multiple_crate_versions = "allow"               # Cannot fix that
+# restriction lints
+absolute_paths = { level = "warn", priority = -2 }
+allow_attributes = { level = "warn", priority = -2 }
+allow_attributes_without_reason = { level = "warn", priority = -2 }
+assertions_on_result_states = { level = "warn", priority = -2 }
+deref_by_slicing = { level = "warn", priority = -2 }
+exhaustive_enums = { level = "warn", priority = -2 }
+exhaustive_structs = { level = "warn", priority = -2 }
+expect_used = { level = "warn", priority = -2 }
+format_push_string = { level = "warn", priority = -2 }
+if_then_some_else_none = { level = "warn", priority = -2 }
+iter_over_hash_type = { level = "warn", priority = -2 }
+map_err_ignore = { level = "warn", priority = -2 }
+map_with_unused_argument_over_ranges = { level = "warn", priority = -2 }
+missing_assert_message = { level = "warn", priority = -2 }
+missing_asserts_for_indexing = { level = "warn", priority = -2 }
+missing_inline_in_public_items = { level = "warn", priority = -2 }
+pub_use = { level = "warn", priority = -2 }
+redundant_type_annotations = { level = "warn", priority = -2 }
+semicolon_outside_block = { level = "warn", priority = -2 }
+str_to_string = { level = "warn", priority = -2 }
+string_to_string = { level = "warn", priority = -2 }
+unwrap_used = { level = "warn", priority = -2 }

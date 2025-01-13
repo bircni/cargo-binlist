@@ -4,6 +4,7 @@ use crate::{data::VersionCheck, utils};
 
 #[derive(Parser)]
 #[command(author, version, about)]
+/// Check for outdated crates and update them
 pub struct Cli {
     /// dry run
     #[clap(short, long = "dry-run")]

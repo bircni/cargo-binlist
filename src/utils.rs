@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::process::{self, Command};
 
 use anyhow::Context as _;
 use log::LevelFilter;
@@ -126,7 +126,7 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
 
     if pkgs.iter().any(|pkg| pkg.name == "cargo-binstall") {
         log::info!("Using cargo-binstall to update packages");
-        let output = std::process::Command::new("cargo")
+        let output = process::Command::new("cargo")
             .arg("binstall")
             .arg(string)
             .arg("-y")
