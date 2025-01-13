@@ -66,11 +66,11 @@ fn test_cli_run() {
 fn test_cli_update() {
     let pkgs = vec![];
 
-    assert!(Cli::update(&pkgs).is_ok());
+    assert!(utils::update(&pkgs).is_ok());
 }
 
 #[test]
-fn test_version_occurences() {
+fn test_version_occurrences() {
     let pkgs = vec![
         PackageInfo::new("cargo-binstall".to_string(), Version::new(1, 10, 18)),
         PackageInfo::new("cargo-bloat".to_string(), Version::new(0, 12, 1)),
@@ -78,5 +78,5 @@ fn test_version_occurences() {
         PackageInfo::new("cargo-edit".to_string(), Version::new(0, 13, 0)),
     ];
 
-    utils::version_occurences(&pkgs);
+    utils::version_occurrences(&pkgs);
 }
