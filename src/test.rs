@@ -59,8 +59,25 @@ fn test_get_installed_bins() {
 }
 
 #[test]
-fn test_cli_run() {
-    Cli { dry_run: true }.run().unwrap();
+fn test_cli_dry_run() {
+    Cli {
+        dry_run: true,
+        list: false,
+        update: true,
+    }
+    .run()
+    .unwrap();
+}
+
+#[test]
+fn test_cli_list_run() {
+    Cli {
+        dry_run: false,
+        list: true,
+        update: false,
+    }
+    .run()
+    .unwrap();
 }
 
 #[test]
