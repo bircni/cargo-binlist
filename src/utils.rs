@@ -147,6 +147,20 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn list(pkgs: &[PackageInfo]) {
+    if pkgs.is_empty() {
+        log::info!("No packages found");
+        return;
+    }
+    log::info!("Packages with newer versions:");
+
+    for pkg in pkgs {
+        if matches!(pkg.info, VersionCheck::NewerAvailable) {
+            log::info!("{}: {}", pkg.name, pkg.version);
+        }
+    }
+}
+
 /// Initialize the logger
 pub fn initialize_logger() -> anyhow::Result<()> {
     simplelog::TermLogger::init(
@@ -156,7 +170,7 @@ pub fn initialize_logger() -> anyhow::Result<()> {
         LevelFilter::Info,
         ConfigBuilder::new()
             // suppress all logs from dependencies
-            .add_filter_allow_str("cargo-verset")
+            .add_filter_allow_str("cargo_binlist")
             .build(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
