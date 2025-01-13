@@ -1,56 +1,85 @@
-use core::cmp::Ordering;
-
 use clap::Parser;
-use log::LevelFilter;
 
-use crate::utils;
+use crate::{
+    data::{PackageInfo, VersionCheck},
+    utils,
+};
 
 #[derive(Parser)]
 #[command(author, version, about)]
 pub struct Cli {
-    /// The log level to use
-    #[clap(short, long, default_value = "info")]
-    loglevel: LevelFilter,
+    /// dry run
+    #[clap(short, long = "dry-run")]
+    pub(crate) dry_run: bool,
 }
 
 impl Cli {
     pub fn run(&self) -> anyhow::Result<()> {
-        utils::initialize_logger(self.loglevel)?;
+        utils::initialize_logger()?;
 
         let cargo_bins = utils::get_installed_bins()?;
-        let mut newer_available = Vec::new();
-        let mut local_newer = 0;
-        let mut uptodate = 0;
+        let packages = utils::get_package_infos(&cargo_bins);
+        utils::version_occurences(&packages);
 
-        log::info!("Installed Cargo packages and their versions:");
-        for (package, version, latest) in utils::parse_cargo_output(&cargo_bins) {
-            match version.cmp(&latest) {
-                Ordering::Less => {
-                    newer_available.push((package, version, latest));
-                }
-                Ordering::Greater => {
-                    local_newer += 1;
-                }
-                Ordering::Equal => {
-                    uptodate += 1;
-                }
+        if self.dry_run {
+            log::info!("Dry run enabled, not updating packages");
+            return Ok(());
+        }
+
+        if packages
+            .iter()
+            .any(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable))
+        {
+            log::info!("Updating packages");
+            Self::update(&packages)?;
+        } else {
+            log::info!("No packages to update");
+            return Ok(());
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
+        let mut string = pkgs
+            .iter()
+            .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable))
+            .map(|pkg| pkg.name.clone())
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        // filter out the cargo-binstall package as we cannot update cargo-binstall using itself
+        if string.contains("cargo-binstall") {
+            log::warn!("cargo-binstall cannot update itself, please update it manually");
+            string
+                .replace("cargo-binstall", "")
+                .trim()
+                .clone_into(&mut string);
+        }
+
+        if string.is_empty() {
+            log::info!("No packages to update");
+            return Ok(());
+        }
+
+        if pkgs.iter().any(|pkg| pkg.name == "cargo-binstall") {
+            log::info!("Using cargo-binstall to update packages");
+            let output = std::process::Command::new("cargo")
+                .arg("binstall")
+                .arg(string)
+                .arg("-y")
+                .output()?;
+
+            if output.status.success() {
+                log::info!("{}", String::from_utf8_lossy(&output.stdout));
+            } else {
+                log::error!("{}", String::from_utf8_lossy(&output.stderr));
+                anyhow::bail!("Failed to update packages");
             }
-        }
-        log::info!("Results:");
-        if uptodate > 0 {
-            log::info!("{} packages are up-to-date", uptodate);
-        }
-        if local_newer > 0 {
-            log::info!("{} packages are newer than the latest version", local_newer);
-        }
-        if !newer_available.is_empty() {
-            log::info!(
-                "{} packages have newer versions available:",
-                newer_available.len()
-            );
-            for (package, version, latest_version) in newer_available {
-                log::info!("{}: {} (latest: {})", package, version, latest_version);
-            }
+        } else {
+            log::info!("Not updating packages");
+            log::info!("cargo-binstall is not installed");
+            log::info!("Run `cargo install cargo-binstall` to install it");
         }
 
         Ok(())
