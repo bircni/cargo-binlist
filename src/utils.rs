@@ -103,23 +103,19 @@ pub fn get_installed_bins() -> anyhow::Result<String> {
 
 /// Update the packages
 pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
-    let mut string = pkgs
+    let mut packages = pkgs
         .iter()
         .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable))
         .map(|pkg| pkg.name.clone())
-        .collect::<Vec<String>>()
-        .join(" ");
+        .collect::<Vec<String>>();
 
     // filter out the cargo-binstall package as we cannot update cargo-binstall using itself
-    if string.contains("cargo-binstall") {
+    if packages.contains(&"cargo-binstall".to_owned()) {
         log::warn!("cargo-binstall cannot update itself, please update it manually");
-        string
-            .replace("cargo-binstall", "")
-            .trim()
-            .clone_into(&mut string);
+        packages.retain(|pkg| pkg != "cargo-binstall");
     }
 
-    if string.is_empty() {
+    if packages.is_empty() {
         log::info!("No packages to update");
         return Ok(());
     }
@@ -128,14 +124,15 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
         log::info!("Using cargo-binstall to update packages");
         let output = process::Command::new("cargo")
             .arg("binstall")
-            .arg(string)
+            .args(&packages)
             .arg("-y")
             .output()?;
 
         if output.status.success() {
-            log::info!("{}", String::from_utf8_lossy(&output.stdout));
+            log::info!("Packages updated successfully: {}", packages.join(", "));
         } else {
             log::error!("{}", String::from_utf8_lossy(&output.stderr));
+            log::error!("{}", String::from_utf8_lossy(&output.stdout));
             anyhow::bail!("Failed to update packages");
         }
     } else {
