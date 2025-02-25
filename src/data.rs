@@ -1,21 +1,36 @@
 use std::{cmp::Ordering, time::Duration};
 
+use comfy_table::{Attribute, Cell, Color};
 use crates_io_api::SyncClient;
 use semver::Version;
 
 /// Enum to represent the version check status
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum VersionCheck {
+    /// Latest version is newer than the local version
+    NewerAvailable(Version),
+    /// Local version is up to date
+    UpToDate,
     /// Local version is newer than the latest version
     LocalNewer,
-    /// Latest version is newer than the local version
-    NewerAvailable,
     /// Crate is not available on crates.io
     #[default]
     UnAvailable,
-    /// Local version is up to date
-    UpToDate,
 }
+
+impl VersionCheck {
+    pub fn colored_cell(&self) -> Cell {
+        match self {
+            Self::LocalNewer => Cell::new("No Update").add_attribute(Attribute::Dim),
+            Self::NewerAvailable(version) => Cell::new(format!("Update Available ({version})"))
+                .fg(Color::Green)
+                .add_attribute(Attribute::Bold),
+            Self::UnAvailable => Cell::new("Not Available").fg(Color::Red),
+            Self::UpToDate => Cell::new("Up to date").fg(Color::Blue),
+        }
+    }
+}
+
 pub struct PackageInfo {
     /// Name of the package
     pub name: String,
@@ -38,7 +53,7 @@ impl PackageInfo {
     /// Set the version check status based on the latest version
     pub fn set_info(&mut self, latest: &Version) {
         self.info = match self.version.cmp(latest) {
-            Ordering::Less => VersionCheck::NewerAvailable,
+            Ordering::Less => VersionCheck::NewerAvailable(latest.clone()),
             Ordering::Greater => VersionCheck::LocalNewer,
             Ordering::Equal => VersionCheck::UpToDate,
         }

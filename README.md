@@ -5,6 +5,7 @@
 [![CI](https://github.com/bircni/cargo-binlist/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bircni/cargo-binlist/actions/workflows/ci.yml)
 
 `cargo-binlist` is a tool to list all the installed binaries with cargo and their versions.
+You can get a list of installed binaries and update them using cargo-binstall.
 
 ## Installation
 
@@ -18,7 +19,9 @@ cargo install cargo-binlist
 Usage: cargo-binlist [OPTIONS]
 
 Options:
-  -l, --loglevel <LOGLEVEL>  The log level to use [default: info]
-  -h, --help                 Print help
-  -V, --version              Print version
+  -d, --dry-run  dry run
+  -l, --list     List crates with newer versions
+  -u, --update   Update all crates
+  -h, --help     Print help
+  -V, --version  Print version
 ```

@@ -1,4 +1,5 @@
 #![expect(clippy::unwrap_used, reason = "unwrap is used for testing purposes")]
+use log::LevelFilter;
 use semver::Version;
 
 use crate::{
@@ -50,7 +51,7 @@ fn test_packageinfo() {
     let latest = pkg.latest_version().unwrap();
     assert!(latest > pkg.version);
     pkg.set_info(&latest);
-    assert_eq!(pkg.info, VersionCheck::NewerAvailable);
+    assert_eq!(pkg.info, VersionCheck::NewerAvailable(latest));
 }
 
 #[test]
@@ -61,9 +62,10 @@ fn test_get_installed_bins() {
 #[test]
 fn test_cli_list() {
     Cli {
-        dry_run: false,
         list: true,
         update: false,
+        list_updates: false,
+        verbose: LevelFilter::Trace,
     }
     .run()
     .unwrap();
