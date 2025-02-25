@@ -1,9 +1,12 @@
-
 use clap::Parser;
 use log::LevelFilter;
 
 use crate::utils;
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "This struct is used to parse CLI arguments"
+)]
 #[derive(Parser)]
 #[command(author, version, about)]
 /// Check for outdated crates and update them
@@ -17,17 +20,22 @@ pub struct Cli {
     /// Update all crates
     #[clap(short, long)]
     pub(crate) update: bool,
-    /// Verbose mode [Debug, Info, Error, Warn]
-    #[clap(short = 'v', long, default_value = "Info")]
-    pub(crate) verbose: LevelFilter,
+    /// Log Level Filter [Debug, Info, Error, Warn]
+    #[clap(short = 'f', long = "loglevel", default_value = "Info")]
+    pub(crate) filter: LevelFilter,
+    /// Initialize everything to use this crate
+    #[clap(short, long)]
+    pub(crate) init: bool,
 }
 
 impl Cli {
     /// Run the CLI
     pub fn run(&self) -> anyhow::Result<()> {
-        utils::initialize_logger(self.verbose)?;
+        utils::initialize_logger(self.filter)?;
 
-        if self.update {
+        if self.init {
+            utils::init()?;
+        } else if self.update {
             let cargo_bins = utils::get_installed_bins()?;
             let packages = utils::get_package_infos(&cargo_bins);
 

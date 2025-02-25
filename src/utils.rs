@@ -2,12 +2,49 @@ use std::process::{self, Command};
 
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
+use dialoguer::Confirm;
 use log::LevelFilter;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
 use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
+use which::which;
 
 use crate::data::{PackageInfo, VersionCheck};
+
+pub fn init() -> anyhow::Result<()> {
+    if which("cargo-binstall").is_ok() {
+        log::info!("cargo-binstall is already installed - aborting");
+        return Ok(());
+    }
+    log::info!("cargo-binstall is not installed");
+    if !(Confirm::new()
+        .with_prompt("Do you want to install cargo-binstall now?")
+        .default(false)
+        .interact()?)
+    {
+        log::info!("Aborting installation");
+        return Ok(());
+    }
+    log::info!("Installing cargo-binstall now - this may take a while");
+
+    let command = Command::new("cargo")
+        .arg("install")
+        .arg("cargo-binstall")
+        .spawn()?;
+
+    let output = command.wait_with_output()?;
+
+    if output.status.success() {
+        log::info!("cargo-binstall installed successfully");
+    } else {
+        anyhow::bail!(
+            "Failed to install cargo-binstall: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    Ok(())
+}
 
 /// Function to parse the output of `cargo install --list`
 pub fn get_package_infos(output: &str) -> Vec<PackageInfo> {

@@ -9,8 +9,16 @@ You can get a list of installed binaries and update them using cargo-binstall.
 
 ## Installation
 
+Using `cargo install`
+
 ```sh
 cargo install cargo-binlist
+```
+
+or using `cargo binstall`
+
+```sh
+cargo binstall cargo-binlist
 ```
 
 ## Usage
@@ -19,9 +27,10 @@ cargo install cargo-binlist
 Usage: cargo-binlist [OPTIONS]
 
 Options:
-  -d, --dry-run  dry run
-  -l, --list     List crates with newer versions
-  -u, --update   Update all crates
-  -h, --help     Print help
-  -V, --version  Print version
+  -l, --list               List all installed crates
+  -n, --list-updates       List crates with newer versions available
+  -u, --update             Update all crates
+  -f, --loglevel <FILTER>  Log Level Filter [Debug, Info, Error, Warn] [default: Info]
+  -h, --help               Print help
+  -V, --version            Print version
 ```

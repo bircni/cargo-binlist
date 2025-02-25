@@ -65,7 +65,8 @@ fn test_cli_list() {
         list: true,
         update: false,
         list_updates: false,
-        verbose: LevelFilter::Trace,
+        filter: LevelFilter::Trace,
+        init: false,
     }
     .run()
     .unwrap();
