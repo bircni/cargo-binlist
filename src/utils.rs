@@ -1,12 +1,50 @@
 use std::process::{self, Command};
 
 use anyhow::Context as _;
-use log::LevelFilter;
+use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
+use dialoguer::Confirm;
+use log::{LevelFilter, log_enabled};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
 use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
+use which::which;
 
 use crate::data::{PackageInfo, VersionCheck};
+
+pub fn init() -> anyhow::Result<()> {
+    if which("cargo-binstall").is_ok() {
+        log::info!("cargo-binstall is already installed - aborting");
+        return Ok(());
+    }
+    log::info!("cargo-binstall is not installed");
+    if !(Confirm::new()
+        .with_prompt("Do you want to install cargo-binstall now?")
+        .default(false)
+        .interact()?)
+    {
+        log::info!("Aborting installation");
+        return Ok(());
+    }
+    log::info!("Installing cargo-binstall now - this may take a while");
+
+    let command = Command::new("cargo")
+        .arg("install")
+        .arg("cargo-binstall")
+        .spawn()?;
+
+    let output = command.wait_with_output()?;
+
+    if output.status.success() {
+        log::info!("cargo-binstall installed successfully");
+    } else {
+        anyhow::bail!(
+            "Failed to install cargo-binstall: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    Ok(())
+}
 
 /// Function to parse the output of `cargo install --list`
 pub fn get_package_infos(output: &str) -> Vec<PackageInfo> {
@@ -23,42 +61,30 @@ pub fn get_package_infos(output: &str) -> Vec<PackageInfo> {
         }
     });
 
+    packages.sort_by(|a, b| a.info.cmp(&b.info));
+
     packages
 }
 
 /// Function to print the version occurrences
 pub fn version_occurrences(packages: &[PackageInfo]) {
-    let mut local_newer_count = 0;
-    let mut newer_available_count = 0;
-    let mut unavailable_count = 0;
     let mut up_to_date_count = 0;
 
     for package in packages {
         match &package.info {
-            VersionCheck::LocalNewer => local_newer_count += 1,
-            VersionCheck::NewerAvailable => {
-                newer_available_count += 1;
+            VersionCheck::NewerAvailable(_) => {
                 log::debug!("{} has a newer version available", package.name);
             }
-            VersionCheck::UnAvailable => unavailable_count += 1,
             VersionCheck::UpToDate => up_to_date_count += 1,
+            VersionCheck::LocalNewer | VersionCheck::UnAvailable => {}
         }
     }
 
-    log::info!("Results:");
-    log::info!("{} packages total", packages.len());
-    if local_newer_count > 0 {
-        log::info!("{local_newer_count} packages are newer than the latest version");
-    }
-    if unavailable_count > 0 {
-        log::info!("{unavailable_count} packages could not be found");
-    }
-    if up_to_date_count > 0 {
-        log::info!("{up_to_date_count} packages are up-to-date");
-    }
-    if newer_available_count > 0 {
-        log::info!("{newer_available_count} packages have newer versions available");
-    }
+    log::info!(
+        "{}/{} packages are up-to-date",
+        up_to_date_count,
+        packages.len()
+    );
 }
 
 /// Helper function to parse a package line (e.g., "cargo-binstall v1.10.18:")
@@ -103,23 +129,19 @@ pub fn get_installed_bins() -> anyhow::Result<String> {
 
 /// Update the packages
 pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
-    let mut string = pkgs
+    let mut packages = pkgs
         .iter()
-        .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable))
+        .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
         .map(|pkg| pkg.name.clone())
-        .collect::<Vec<String>>()
-        .join(" ");
+        .collect::<Vec<String>>();
 
     // filter out the cargo-binstall package as we cannot update cargo-binstall using itself
-    if string.contains("cargo-binstall") {
-        log::warn!("cargo-binstall cannot update itself, please update it manually");
-        string
-            .replace("cargo-binstall", "")
-            .trim()
-            .clone_into(&mut string);
+    if packages.contains(&"cargo-binstall".to_owned()) {
+        println!("cargo-binstall cannot update itself, please update it manually");
+        packages.retain(|pkg| pkg != "cargo-binstall");
     }
 
-    if string.is_empty() {
+    if packages.is_empty() {
         log::info!("No packages to update");
         return Ok(());
     }
@@ -128,14 +150,15 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
         log::info!("Using cargo-binstall to update packages");
         let output = process::Command::new("cargo")
             .arg("binstall")
-            .arg(string)
+            .args(&packages)
             .arg("-y")
             .output()?;
 
         if output.status.success() {
-            log::info!("{}", String::from_utf8_lossy(&output.stdout));
+            log::info!("Packages updated successfully: {}", packages.join(", "));
         } else {
             log::error!("{}", String::from_utf8_lossy(&output.stderr));
+            log::error!("{}", String::from_utf8_lossy(&output.stdout));
             anyhow::bail!("Failed to update packages");
         }
     } else {
@@ -147,33 +170,78 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn list(pkgs: &[PackageInfo]) {
-    if pkgs.is_empty() {
+pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool) {
+    if pkg_vec.is_empty() {
         log::info!("No packages found");
         return;
     }
-    log::info!("Packages with newer versions:");
-
-    for pkg in pkgs {
-        if matches!(pkg.info, VersionCheck::NewerAvailable) {
-            log::info!("{}: {}", pkg.name, pkg.version);
+    let table = if only_updates {
+        let res = pkg_vec
+            .into_iter()
+            .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
+            .collect::<Vec<PackageInfo>>();
+        if res.is_empty() {
+            println!("No packages with newer versions found");
+            return;
         }
-    }
+        println!("Packages with newer versions:");
+
+        create_table(&res)
+    } else {
+        println!("All installed packages:");
+        create_table(&pkg_vec)
+    };
+
+    println!("{table}");
+}
+
+fn create_table(pkgs: &[PackageInfo]) -> Table {
+    let header = vec![
+        Cell::new("Name").add_attribute(Attribute::Bold),
+        Cell::new("Version").add_attribute(Attribute::Bold),
+        Cell::new("Status").add_attribute(Attribute::Bold),
+    ];
+
+    let rows = pkgs
+        .iter()
+        .map(|pkg| {
+            vec![
+                Cell::new(&pkg.name),
+                Cell::new(&pkg.version),
+                pkg.info.colored_cell(),
+            ]
+        })
+        .collect::<Vec<_>>();
+
+    let mut table = Table::new();
+    table
+        .load_preset(presets::UTF8_FULL)
+        .apply_modifier(modifiers::UTF8_ROUND_CORNERS)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(header)
+        .add_rows(rows);
+
+    table
 }
 
 /// Initialize the logger
-pub fn initialize_logger() -> anyhow::Result<()> {
-    simplelog::TermLogger::init(
-        #[cfg(debug_assertions)]
-        LevelFilter::max(),
-        #[cfg(not(debug_assertions))]
-        LevelFilter::Info,
-        ConfigBuilder::new()
-            // suppress all logs from dependencies
-            .add_filter_allow_str("cargo_binlist")
-            .build(),
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    )
-    .context("Failed to initialize logger")
+pub fn initialize_logger(verbose: LevelFilter) -> anyhow::Result<()> {
+    let filter = if cfg!(debug_assertions) {
+        LevelFilter::max()
+    } else {
+        verbose
+    };
+    if !log_enabled!(filter.to_level().context("Failed to get log level")?) {
+        return simplelog::TermLogger::init(
+            filter,
+            ConfigBuilder::new()
+                // suppress all logs from dependencies
+                .add_filter_allow_str("cargo_binlist")
+                .build(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        )
+        .context("Failed to initialize logger");
+    }
+    Ok(())
 }

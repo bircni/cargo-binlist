@@ -4,7 +4,7 @@ description = "List all installed binaries with cargo and their versions"
 repository = "https://github.com/bircni/cargo-binlist"
 version = "0.2.1"
 authors = ["bircni"]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins"]
@@ -13,49 +13,61 @@ keywords = ["cargo", "binlist", "version", "plugin", "cli"]
 [dependencies]
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
+comfy-table = "7.1.4"
 crates_io_api = { version = "0.11", default-features = false, features = [
     "rustls",
 ] }
+dialoguer = "0.11.0"
 log = "0.4"
 rayon = "1.10"
 semver = "1"
 simplelog = "0.12"
+which = "7.0.2"
 
 [lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "deny"
 deprecated = "warn"
+elided_lifetimes_in_paths = "warn"
+future_incompatible = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
+rust_2018_idioms = { level = "warn", priority = -1 }
+rust_2021_prelude_collisions = "warn"
+semicolon_in_expressions_from_macros = "warn"
+trivial_numeric_casts = "warn"
+unsafe_op_in_unsafe_fn = "warn"                         # `unsafe_op_in_unsafe_fn` may become the default in future Rust versions: https://github.com/rust-lang/rust/issues/71668
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+trivial_casts = "allow"
+unused_qualifications = "allow"
+
+[lints.rustdoc]
+all = "warn"
+missing_crate_level_docs = "warn"
 
 [lints.clippy]
-cargo = { level = "warn", priority = -1 }
-complexity = { level = "warn", priority = -1 }
+all = { level = "warn", priority = -1 }
 correctness = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-perf = { level = "warn", priority = -1 }
-style = { level = "warn", priority = -1 }
 suspicious = { level = "warn", priority = -1 }
-# Allow clippy lints which we don't want to enforce
-multiple_crate_versions = "allow"
-# lints from the restriction group
-absolute_paths = { level = "warn", priority = -2 }
-allow_attributes = { level = "warn", priority = -2 }
-allow_attributes_without_reason = { level = "warn", priority = -2 }
-assertions_on_result_states = { level = "warn", priority = -2 }
-deref_by_slicing = { level = "warn", priority = -2 }
-exhaustive_enums = { level = "warn", priority = -2 }
-exhaustive_structs = { level = "warn", priority = -2 }
-expect_used = { level = "warn", priority = -2 }
-format_push_string = { level = "warn", priority = -2 }
-if_then_some_else_none = { level = "warn", priority = -2 }
-iter_over_hash_type = { level = "warn", priority = -2 }
-map_err_ignore = { level = "warn", priority = -2 }
-map_with_unused_argument_over_ranges = { level = "warn", priority = -2 }
-missing_assert_message = { level = "warn", priority = -2 }
-missing_asserts_for_indexing = { level = "warn", priority = -2 }
-missing_inline_in_public_items = { level = "warn", priority = -2 }
-pub_use = { level = "warn", priority = -2 }
-redundant_type_annotations = { level = "warn", priority = -2 }
-semicolon_outside_block = { level = "warn", priority = -2 }
-str_to_string = { level = "warn", priority = -2 }
-string_to_string = { level = "warn", priority = -2 }
-unwrap_used = { level = "warn", priority = -2 }
+style = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Additional lints from https://rust-lang.github.io/rust-clippy/master/index.html?groups=restriction
+absolute_paths = "warn"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+assertions_on_result_states = "warn"
+create_dir = "warn"
+clone_on_ref_ptr = "warn"
+expect_used = "warn"
+missing_assert_message = "warn"
+panic_in_result_fn = "warn"
+shadow_reuse = "warn"
+str_to_string = "warn"
+todo = "warn"
+unimplemented = "warn"
+unwrap_used = "warn"
+wildcard_enum_match_arm = "warn"

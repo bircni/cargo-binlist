@@ -1,50 +1,54 @@
 use clap::Parser;
+use log::LevelFilter;
 
-use crate::{data::VersionCheck, utils};
+use crate::utils;
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "This struct is used to parse CLI arguments"
+)]
 #[derive(Parser)]
 #[command(author, version, about)]
 /// Check for outdated crates and update them
 pub struct Cli {
-    /// dry run
-    #[clap(short, long = "dry-run")]
-    pub(crate) dry_run: bool,
-    /// List crates with newer versions
+    /// List all installed crates
     #[clap(short, long)]
     pub(crate) list: bool,
+    /// List crates with newer versions available
+    #[clap(short = 'n', long)]
+    pub(crate) list_updates: bool,
     /// Update all crates
     #[clap(short, long)]
     pub(crate) update: bool,
+    /// Log Level Filter [Debug, Info, Error, Warn]
+    #[clap(short = 'f', long = "loglevel", default_value = "Info")]
+    pub(crate) filter: LevelFilter,
+    /// Initialize everything to use this crate
+    #[clap(short, long)]
+    pub(crate) init: bool,
 }
 
 impl Cli {
     /// Run the CLI
     pub fn run(&self) -> anyhow::Result<()> {
-        utils::initialize_logger()?;
+        utils::initialize_logger(self.filter)?;
 
-        let cargo_bins = utils::get_installed_bins()?;
-        let packages = utils::get_package_infos(&cargo_bins);
+        if self.init {
+            utils::init()?;
+        } else if self.update {
+            let cargo_bins = utils::get_installed_bins()?;
+            let packages = utils::get_package_infos(&cargo_bins);
 
-        if packages
-            .iter()
-            .any(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable))
-        {
-            if self.update {
-                utils::version_occurrences(&packages);
-                if self.dry_run {
-                    log::info!("Dry run enabled, not updating packages");
-                    return Ok(());
-                }
-                log::info!("Updating packages");
-                utils::update(&packages)?;
-            } else if self.list {
-                utils::list(&packages);
-            } else {
-                log::info!("Run with --update to update packages");
-            }
+            utils::version_occurrences(&packages);
+            log::debug!("Updating packages");
+            utils::update(&packages)?;
+        } else if self.list_updates || self.list {
+            let cargo_bins = utils::get_installed_bins()?;
+            let packages = utils::get_package_infos(&cargo_bins);
+
+            utils::list_pkgs(packages, self.list_updates);
         } else {
-            log::info!("No packages to update");
-            return Ok(());
+            println!("No action specified");
         }
 
         Ok(())
