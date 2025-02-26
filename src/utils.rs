@@ -3,7 +3,7 @@ use std::process::{self, Command};
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
 use dialoguer::Confirm;
-use log::{Level, LevelFilter, log_enabled};
+use log::{LevelFilter, log_enabled};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
 use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
