@@ -73,6 +73,19 @@ fn test_cli_list() {
 }
 
 #[test]
+fn test_cli_list_update() {
+    Cli {
+        list: false,
+        update: false,
+        list_updates: true,
+        filter: LevelFilter::Trace,
+        init: false,
+    }
+    .run()
+    .unwrap();
+}
+
+#[test]
 fn test_cli_update() {
     utils::update(&[]).unwrap();
 }

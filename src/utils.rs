@@ -3,7 +3,7 @@ use std::process::{self, Command};
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
 use dialoguer::Confirm;
-use log::LevelFilter;
+use log::{Level, LevelFilter, log_enabled};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
 use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
@@ -231,14 +231,17 @@ pub fn initialize_logger(verbose: LevelFilter) -> anyhow::Result<()> {
     } else {
         verbose
     };
-    simplelog::TermLogger::init(
-        filter,
-        ConfigBuilder::new()
-            // suppress all logs from dependencies
-            .add_filter_allow_str("cargo_binlist")
-            .build(),
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    )
-    .context("Failed to initialize logger")
+    if !log_enabled!(filter.to_level().context("Failed to get log level")?) {
+        return simplelog::TermLogger::init(
+            filter,
+            ConfigBuilder::new()
+                // suppress all logs from dependencies
+                .add_filter_allow_str("cargo_binlist")
+                .build(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        )
+        .context("Failed to initialize logger");
+    }
+    Ok(())
 }
