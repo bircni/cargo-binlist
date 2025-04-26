@@ -8,9 +8,9 @@ use cli::Cli;
 
 mod cli;
 mod data;
+mod logic;
 #[cfg(test)]
 mod test;
-mod utils;
 
 fn main() {
     match real_main() {

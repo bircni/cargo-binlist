@@ -1,12 +1,10 @@
-use std::process::{self, Command};
+use std::process::Command;
 
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
 use dialoguer::Confirm;
-use log::{LevelFilter, log_enabled};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
-use simplelog::{ColorChoice, ConfigBuilder, TerminalMode};
 use which::which;
 
 use crate::data::{PackageInfo, VersionCheck};
@@ -17,10 +15,10 @@ pub fn init() -> anyhow::Result<()> {
         return Ok(());
     }
     log::info!("cargo-binstall is not installed");
-    if !(Confirm::new()
+    if !Confirm::new()
         .with_prompt("Do you want to install cargo-binstall now?")
         .default(false)
-        .interact()?)
+        .interact()?
     {
         log::info!("Aborting installation");
         return Ok(());
@@ -148,7 +146,7 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
 
     if pkgs.iter().any(|pkg| pkg.name == "cargo-binstall") {
         log::info!("Using cargo-binstall to update packages");
-        let output = process::Command::new("cargo")
+        let output = Command::new("cargo")
             .arg("binstall")
             .args(&packages)
             .arg("-y")
@@ -222,26 +220,4 @@ fn create_table(pkgs: &[PackageInfo]) -> Table {
         .add_rows(rows);
 
     table
-}
-
-/// Initialize the logger
-pub fn initialize_logger(verbose: LevelFilter) -> anyhow::Result<()> {
-    let filter = if cfg!(debug_assertions) {
-        LevelFilter::max()
-    } else {
-        verbose
-    };
-    if !log_enabled!(filter.to_level().context("Failed to get log level")?) {
-        return simplelog::TermLogger::init(
-            filter,
-            ConfigBuilder::new()
-                // suppress all logs from dependencies
-                .add_filter_allow_str("cargo_binlist")
-                .build(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        )
-        .context("Failed to initialize logger");
-    }
-    Ok(())
 }

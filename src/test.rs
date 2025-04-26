@@ -3,9 +3,9 @@ use log::LevelFilter;
 use semver::Version;
 
 use crate::{
-    cli::Cli,
+    cli::{Cli, Opts},
     data::{PackageInfo, VersionCheck},
-    utils,
+    logic,
 };
 
 #[test]
@@ -24,7 +24,7 @@ cargo-edit v0.13.0:
     cargo-upgrade
 ";
 
-    let mut parsed = utils::get_package_infos(output);
+    let mut parsed = logic::get_package_infos(output);
     parsed.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(parsed.len(), 4);
     assert_eq!(parsed[0].name, "cargo-binstall");
@@ -40,7 +40,7 @@ cargo-edit v0.13.0:
 #[test]
 fn test_parse_package_line() {
     let line = "tester v1.10.18:";
-    let parsed = utils::parse_package_line(line).unwrap();
+    let parsed = logic::parse_package_line(line).unwrap();
     assert_eq!(parsed.name, "tester");
     assert_eq!(parsed.version.to_string(), "1.10.18");
 }
@@ -56,25 +56,21 @@ fn test_packageinfo() {
 
 #[test]
 fn test_get_installed_bins() {
-    utils::get_installed_bins().unwrap();
+    logic::get_installed_bins().unwrap();
 }
 
 #[test]
 fn test_cli_list() {
-    Cli {
-        list: true,
-        update: false,
-        list_updates: false,
+    Cli::List(Opts {
         filter: LevelFilter::Trace,
-        init: false,
-    }
+    })
     .run()
     .unwrap();
 }
 
 #[test]
 fn test_cli_update() {
-    utils::update(&[]).unwrap();
+    logic::update(&[]).unwrap();
 }
 
 #[test]
@@ -86,5 +82,5 @@ fn test_version_occurrences() {
         PackageInfo::new("cargo-edit".to_owned(), Version::new(0, 13, 0)),
     ];
 
-    utils::version_occurrences(&pkgs);
+    logic::version_occurrences(&pkgs);
 }
