@@ -79,6 +79,9 @@ commit_parsers = [
     { message = "^test", group = "Tests" },
     { message = "^release.*", skip = true },
     { message = "^chore", group = "Miscellaneous Chores" },
+    { message = "^ci", group = "Continuous Integration" },
+    { message = "^test.*", group = "Tests" },
+    { body = ".*chore.*", skip = true },
     { body = ".*security", group = "Security" },
 ]
 # Exclude commits that are not matched by any commit parser.

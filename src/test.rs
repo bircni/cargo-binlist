@@ -1,4 +1,5 @@
 #![expect(clippy::unwrap_used, reason = "unwrap is used for testing purposes")]
+use comfy_table::{Attribute, Cell, Color};
 use log::LevelFilter;
 use semver::Version;
 
@@ -83,4 +84,29 @@ fn test_version_occurrences() {
     ];
 
     logic::version_occurrences(&pkgs);
+}
+
+#[test]
+fn test_colored_cell() {
+    let local_newer_cell = Cell::new("No Update").add_attribute(Attribute::Dim);
+    let cell = VersionCheck::LocalNewer.colored_cell();
+    assert_eq!(cell.content(), "No Update");
+    assert_eq!(cell, local_newer_cell);
+
+    let newer_available_cell = Cell::new("Update Available (2.0.0)")
+        .fg(Color::Green)
+        .add_attribute(Attribute::Bold);
+    let cell = VersionCheck::NewerAvailable(Version::new(2, 0, 0)).colored_cell();
+    assert_eq!(cell.content(), "Update Available (2.0.0)");
+    assert_eq!(cell, newer_available_cell);
+
+    let unavailable_cell = Cell::new("Not Available").fg(Color::Red);
+    let cell = VersionCheck::UnAvailable.colored_cell();
+    assert_eq!(cell.content(), "Not Available");
+    assert_eq!(cell, unavailable_cell);
+
+    let up_to_date_cell = Cell::new("Up to date").fg(Color::Blue);
+    let cell = VersionCheck::UpToDate.colored_cell();
+    assert_eq!(cell.content(), "Up to date");
+    assert_eq!(cell, up_to_date_cell);
 }
