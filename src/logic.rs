@@ -135,7 +135,7 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
 
     // filter out the cargo-binstall package as we cannot update cargo-binstall using itself
     if packages.contains(&"cargo-binstall".to_owned()) {
-        println!("cargo-binstall cannot update itself, please update it manually");
+        log::warn!("cargo-binstall cannot update itself, please update it manually");
         packages.retain(|pkg| pkg != "cargo-binstall");
     }
 
@@ -179,14 +179,14 @@ pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool) {
             .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
             .collect::<Vec<PackageInfo>>();
         if res.is_empty() {
-            println!("No packages with newer versions found");
+            log::info!("No packages with newer versions found");
             return;
         }
-        println!("Packages with newer versions:");
+        log::info!("Packages with newer versions:");
 
         create_table(&res)
     } else {
-        println!("All installed packages:");
+        log::info!("All installed packages:");
         create_table(&pkg_vec)
     };
 
