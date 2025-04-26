@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.0.1](https://github.com/bircni/cargo-binlist/compare/1.0.0..1.0.1) - 2025-04-26
+
+### Bug Fixes
+
+- print out with logger instead of println - ([931952d](https://github.com/bircni/cargo-binlist/commit/931952d97c756d6d4135d1d881909b89ec7b441d)) - Nicolas
+
 ## [1.0.0](https://github.com/bircni/cargo-binlist/compare/0.4.1..1.0.0) - 2025-04-26
 
 ### Refactoring
