@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.0.0](https://github.com/bircni/cargo-binlist/compare/0.4.1..1.0.0) - 2025-04-26
+
+### Refactoring
+
+-  [**breaking**]use enum instead of optional bools - ([1fcc1b5](https://github.com/bircni/cargo-binlist/commit/1fcc1b50c5e76b7f0432b6952959cf3cba415784)) - Nicolas
+
+### Tests
+
+- add more tests to check table contents - ([74d73a4](https://github.com/bircni/cargo-binlist/commit/74d73a4cbe875832fe50ceb1e02318bb36a5cbd0)) - Nicolas
+
 ## [0.4.1](https://github.com/bircni/cargo-binlist/compare/0.3.0..0.4.1) - 2025-04-18
 
 ### Bug Fixes
@@ -9,14 +19,14 @@ All notable changes to this project will be documented in this file. See [conven
 - fix lint errors occurring in new rust version - ([bdb4247](https://github.com/bircni/cargo-binlist/commit/bdb424727a102c98ffbf346f250fb135bdbdc672)) - Nicolas
 - ignore typos in Changelog as some old commits have typos - ([686d9d5](https://github.com/bircni/cargo-binlist/commit/686d9d55324cf262afab2bdc94c768cc8b12908a)) - Nicolas
 
+### Continuous Integration
+
+- only run on ubuntu-latest - ([5a60cc8](https://github.com/bircni/cargo-binlist/commit/5a60cc81b03593f75310ded44fca25fb2574f55f)) - Nicolas
+
 ### Features
 
 - add build script for correct versioning - ([52d1d7a](https://github.com/bircni/cargo-binlist/commit/52d1d7a9bef5a7d40c04410f38cfd458b7313c6e)) - Nicolas
 - add release scripts - ([fa09664](https://github.com/bircni/cargo-binlist/commit/fa0966417892d82b6e63b900fe3e8d9d19e90c76)) - Nicolas
-
-### Ci
-
-- only run on ubuntu-latest - ([5a60cc8](https://github.com/bircni/cargo-binlist/commit/5a60cc81b03593f75310ded44fca25fb2574f55f)) - Nicolas
 
 ## [0.3.0](https://github.com/bircni/cargo-binlist/compare/0.2.1..0.3.0) - 2025-04-18
 
