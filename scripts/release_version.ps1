@@ -44,7 +44,14 @@ if ($confirmation -ne 'y') {
     exit 0
 }
 # Commit the changes
-git add Cargo.toml CHANGELOG.md
+git add Cargo.toml CHANGELOG.md Cargo.lock
+# Build the crate to ensure everything is working
+cargo build --release --quiet
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Cargo build failed. Please fix the issues before committing."
+    exit 1
+}
+Write-Host "Cargo build successful. Committing changes..."
 git commit -m "release($version)"
 git tag -a $version -m "Release $version" 
 

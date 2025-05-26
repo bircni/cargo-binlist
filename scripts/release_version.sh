@@ -46,7 +46,15 @@ if [ "$answer" != "y" ]; then
 fi
 
 # Commit changes
-git add Cargo.toml CHANGELOG.md
+git add Cargo.toml CHANGELOG.md Cargo.lock
+# Build the project to ensure everything is up to date
+echo "Building the project..."
+if ! cargo build --release --quiet; then
+    err "Build failed. Please fix the issues before committing."
+    exit 1
+fi
+echo "Successfully built the project."
+
 git commit -m "release($version)"
 git tag -a "$version" -m "Release $version"
 
