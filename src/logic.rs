@@ -79,8 +79,7 @@ pub fn version_occurrences(packages: &[PackageInfo]) {
     }
 
     log::info!(
-        "{}/{} packages are up-to-date",
-        up_to_date_count,
+        "{up_to_date_count}/{} packages are up-to-date",
         packages.len()
     );
 }
@@ -127,17 +126,11 @@ pub fn get_installed_bins() -> anyhow::Result<String> {
 
 /// Update the packages
 pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
-    let mut packages = pkgs
+    let packages = pkgs
         .iter()
         .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
         .map(|pkg| pkg.name.clone())
         .collect::<Vec<String>>();
-
-    // filter out the cargo-binstall package as we cannot update cargo-binstall using itself
-    if packages.contains(&"cargo-binstall".to_owned()) {
-        log::warn!("cargo-binstall cannot update itself, please update it manually");
-        packages.retain(|pkg| pkg != "cargo-binstall");
-    }
 
     if packages.is_empty() {
         log::info!("No packages to update");
