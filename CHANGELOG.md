@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.1.0](https://github.com/bircni/cargo-binlist/compare/1.0.1..1.1.0) - 2025-05-26
+
+### Bug Fixes
+
+- fix license check - ([fbc58fa](https://github.com/bircni/cargo-binlist/commit/fbc58fa186c6a1a85d623256d03dd526f1e09a31)) - Nicolas
+
+### Features
+
+- stop skipping `cargo-binstall` as installing itself works - ([5a0f98b](https://github.com/bircni/cargo-binlist/commit/5a0f98b9be701cb04c5409f5df1b6986b81e20c3)) - Nicolas
+
+### Build
+
+- update release scripts - ([a20b6a7](https://github.com/bircni/cargo-binlist/commit/a20b6a79ae591d0e221b4156fa5e6f920ddf7bb2)) - Nicolas
+
 ## [1.0.1](https://github.com/bircni/cargo-binlist/compare/1.0.0..1.0.1) - 2025-04-26
 
 ### Bug Fixes
