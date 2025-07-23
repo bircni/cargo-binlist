@@ -22,7 +22,7 @@ log = "0.4"
 rayon = "1.10"
 semver = "1"
 simplelog = "0.12"
-which = "7.0.2"
+which = "8.0"
 
 [lints.rust]
 unsafe_code = "deny"
