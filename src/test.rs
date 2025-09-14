@@ -4,7 +4,7 @@ use log::LevelFilter;
 use semver::Version;
 
 use crate::{
-    cli::{Cli, Opts},
+    cli::{Cli, ListOpts},
     data::{PackageInfo, VersionCheck},
     logic,
 };
@@ -62,8 +62,9 @@ fn test_get_installed_bins() {
 
 #[test]
 fn test_cli_list() {
-    Cli::List(Opts {
+    Cli::List(ListOpts {
         filter: LevelFilter::Trace,
+        outdated: false,
     })
     .run()
     .unwrap();

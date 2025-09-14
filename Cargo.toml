@@ -14,10 +14,10 @@ keywords = ["cargo", "binlist", "version", "plugin", "cli"]
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
 comfy-table = "7.1.4"
-crates_io_api = { version = "0.11", default-features = false, features = [
+crates_io_api = { version = "0.12", default-features = false, features = [
     "rustls",
 ] }
-dialoguer = "0.11"
+dialoguer = "0.12"
 log = "0.4"
 rayon = "1.10"
 semver = "1"

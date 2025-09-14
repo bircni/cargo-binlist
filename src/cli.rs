@@ -9,13 +9,21 @@ use crate::logic;
 #[command(author, version, about)]
 pub enum Cli {
     /// List all installed crates
-    List(Opts),
-    /// List crates with newer versions available
-    ListUpdates(Opts),
+    List(ListOpts),
     /// Update all crates which are outdated
     Update(Opts),
     /// Initialize everything to use this crate
     Init(Opts),
+}
+
+#[derive(Parser)]
+pub struct ListOpts {
+    /// Verbosity level
+    #[arg(short, long, default_value_t = LevelFilter::Info)]
+    pub filter: LevelFilter,
+    /// Show only outdated crates
+    #[arg(long)]
+    pub outdated: bool,
 }
 
 #[derive(Parser)]
@@ -32,9 +40,8 @@ impl Cli {
 
     const fn get_filter(&self) -> LevelFilter {
         match self {
-            Self::List(opts) | Self::ListUpdates(opts) | Self::Update(opts) | Self::Init(opts) => {
-                opts.filter
-            }
+            Self::List(opts) => opts.filter,
+            Self::Update(opts) | Self::Init(opts) => opts.filter,
         }
     }
 
@@ -49,11 +56,11 @@ impl Cli {
         };
 
         match self {
-            Self::List(_) => {
-                logic::list_pkgs(packages.context("Failed to get installed binaries")?, false);
-            }
-            Self::ListUpdates(_) => {
-                logic::list_pkgs(packages.context("Failed to get installed binaries")?, true);
+            Self::List(opt) => {
+                logic::list_pkgs(
+                    packages.context("Failed to get installed binaries")?,
+                    opt.outdated,
+                );
             }
             Self::Update(_) => {
                 let packages = packages.context("Failed to get installed binaries")?;
