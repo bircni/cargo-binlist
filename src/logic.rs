@@ -125,7 +125,7 @@ pub fn get_installed_bins() -> anyhow::Result<String> {
 }
 
 /// Update the packages
-pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
+pub fn update(pkgs: &[PackageInfo], no_confirm: bool) -> anyhow::Result<()> {
     let packages = pkgs
         .iter()
         .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
@@ -135,6 +135,20 @@ pub fn update(pkgs: &[PackageInfo]) -> anyhow::Result<()> {
     if packages.is_empty() {
         log::info!("No packages to update");
         return Ok(());
+    }
+
+    log::info!("Updating packages: {}", packages.join(", "));
+
+    if !no_confirm {
+        // ask for confirmation
+        if !Confirm::new()
+            .with_prompt("Do you want to continue?")
+            .default(false)
+            .interact()?
+        {
+            log::info!("Aborting update");
+            return Ok(());
+        }
     }
 
     if pkgs.iter().any(|pkg| pkg.name == "cargo-binstall") {
