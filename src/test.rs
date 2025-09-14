@@ -72,7 +72,7 @@ fn test_cli_list() {
 
 #[test]
 fn test_cli_update() {
-    logic::update(&[]).unwrap();
+    logic::update(&[], true).unwrap();
 }
 
 #[test]

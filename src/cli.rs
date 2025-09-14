@@ -11,7 +11,7 @@ pub enum Cli {
     /// List all installed crates
     List(ListOpts),
     /// Update all crates which are outdated
-    Update(Opts),
+    Update(UpdateOpts),
     /// Initialize everything to use this crate
     Init(Opts),
 }
@@ -22,8 +22,18 @@ pub struct ListOpts {
     #[arg(short, long, default_value_t = LevelFilter::Info)]
     pub filter: LevelFilter,
     /// Show only outdated crates
-    #[arg(long)]
+    #[arg(short, long)]
     pub outdated: bool,
+}
+
+#[derive(Parser)]
+pub struct UpdateOpts {
+    /// Verbosity level
+    #[arg(short, long, default_value_t = LevelFilter::Info)]
+    pub filter: LevelFilter,
+    /// Update without confirmation
+    #[arg(short = 'n', long)]
+    pub no_confirm: bool,
 }
 
 #[derive(Parser)]
@@ -41,7 +51,8 @@ impl Cli {
     const fn get_filter(&self) -> LevelFilter {
         match self {
             Self::List(opts) => opts.filter,
-            Self::Update(opts) | Self::Init(opts) => opts.filter,
+            Self::Update(opts) => opts.filter,
+            Self::Init(opts) => opts.filter,
         }
     }
 
@@ -62,10 +73,10 @@ impl Cli {
                     opt.outdated,
                 );
             }
-            Self::Update(_) => {
+            Self::Update(opt) => {
                 let packages = packages.context("Failed to get installed binaries")?;
                 logic::version_occurrences(&packages);
-                logic::update(&packages)?;
+                logic::update(&packages, opt.no_confirm)?;
             }
             Self::Init(_) => logic::init()?,
         }
