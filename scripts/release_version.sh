@@ -30,13 +30,22 @@ fi
 
 echo "Calculated version: $version"
 echo "Updating version in Cargo.toml..."
-cargo verset -v "$version"
+cargo verset package -v "$version"
 echo "Version updated successfully in Cargo.toml."
 
 # Generate the changelog
 echo "Generating changelog..."
 git cliff --output CHANGELOG.md -t "$version"
 echo "Changelog generated successfully."
+
+# Build the project to ensure everything is up to date
+echo "Building the project..."
+if ! cargo build --release --quiet; then
+    err "Build failed. Please fix the issues before committing."
+    exit 1
+fi
+echo "Successfully built the project."
+
 # Ask for confirmation before committing
 echo "Do you want to commit the changes? (y/n)"
 read -r answer
@@ -47,13 +56,6 @@ fi
 
 # Commit changes
 git add Cargo.toml CHANGELOG.md Cargo.lock
-# Build the project to ensure everything is up to date
-echo "Building the project..."
-if ! cargo build --release --quiet; then
-    err "Build failed. Please fix the issues before committing."
-    exit 1
-fi
-echo "Successfully built the project."
 
 git commit -m "release($version)"
 git tag -a "$version" -m "Release $version"

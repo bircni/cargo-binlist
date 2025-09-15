@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.2.0](https://github.com/bircni/cargo-binlist/compare/1.1.0..1.2.0) - 2025-09-15
+
+### Continuous Integration
+
+- switch to ubuntu-latest for all jobs - ([b49bb38](https://github.com/bircni/cargo-binlist/commit/b49bb382f83ed291c1dfd6d62a4cdc139f5cd19b)) - Nicolas
+
+### Documentation
+
+- update usage section in README - ([c6ce7de](https://github.com/bircni/cargo-binlist/commit/c6ce7dec07eabfd8d780df757c0f7b25624d1dce)) - Nicolas
+
+### Features
+
+- enhance update command with confirmation request - ([cd73621](https://github.com/bircni/cargo-binlist/commit/cd73621dc14345e622fa82c0595c6879c0cca7fc)) - Nicolas
+
+### Miscellaneous Chores
+
+- remove build script as it is no longer needed - ([46bc184](https://github.com/bircni/cargo-binlist/commit/46bc1849b663097b7d6496af32044356a2fcd35c)) - Nicolas
+
+### Refactoring
+
+- remove `list-updates` and migrate it to `list` - ([4ff1087](https://github.com/bircni/cargo-binlist/commit/4ff1087394a8c092bea36c6c73fe3d5a6dbb6e40)) - Nicolas
+
+### Build
+
+- update Rust toolchain to stable and adjust dependencies - ([e846892](https://github.com/bircni/cargo-binlist/commit/e8468920226fbc1bba4225d151dd27ccd2d324cf)) - Nicolas
+
 ## [1.1.0](https://github.com/bircni/cargo-binlist/compare/1.0.1..1.1.0) - 2025-05-26
 
 ### Bug Fixes

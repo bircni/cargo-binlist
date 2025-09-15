@@ -30,12 +30,19 @@ if ($version -eq $current_version) {
 Write-Host "Calculated version: $version"
 Write-Host "Updating version in Cargo.toml..."
 # Update the version in Cargo.toml
-cargo verset -v $version
+cargo verset package -v $version
 Write-Host "Version updated successfully in Cargo.toml."
 # Generate the changelog
 Write-Host "Generating changelog..."
 git cliff --output CHANGELOG.md -t $version
 Write-Host "Changelog generated successfully."
+# Build the crate to ensure everything is working
+cargo build --release --quiet
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Cargo build failed. Please fix the issues before committing."
+    exit 1
+}
+Write-Host "Cargo build successful. Committing changes..."
 # Ask for confirmation before committing
 Write-Host "Please review the changes in Cargo.toml and CHANGELOG.md."
 $confirmation = Read-Host "Do you want to commit the changes? (y/n)"
@@ -45,13 +52,6 @@ if ($confirmation -ne 'y') {
 }
 # Commit the changes
 git add Cargo.toml CHANGELOG.md Cargo.lock
-# Build the crate to ensure everything is working
-cargo build --release --quiet
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Cargo build failed. Please fix the issues before committing."
-    exit 1
-}
-Write-Host "Cargo build successful. Committing changes..."
 git commit -m "release($version)"
 git tag -a $version -m "Release $version" 
 
