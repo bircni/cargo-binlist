@@ -24,13 +24,15 @@ cargo binstall cargo-binlist
 ## Usage
 
 ```sh
-Usage: cargo-binlist [OPTIONS]
+Usage: cargo-binlist <COMMAND>
+
+Commands:
+  list    List all installed crates
+  update  Update all crates which are outdated
+  init    Initialize everything to use this crate
+  help    Print this message or the help of the given subcommand(s)
 
 Options:
-  -l, --list               List all installed crates
-  -n, --list-updates       List crates with newer versions available
-  -u, --update             Update all crates
-  -f, --loglevel <FILTER>  Log Level Filter [Debug, Info, Error, Warn] [default: Info]
-  -h, --help               Print help
-  -V, --version            Print version
+  -h, --help     Print help
+  -V, --version  Print version
 ```
