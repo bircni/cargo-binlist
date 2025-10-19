@@ -104,7 +104,7 @@ pub fn parse_package_line(line: &str) -> anyhow::Result<PackageInfo> {
 
         return Ok(PackageInfo::new(name, version));
     }
-    anyhow::bail!("Invalid package line: {}", line)
+    anyhow::bail!("Invalid package line: {line}")
 }
 
 /// Get the installed binaries

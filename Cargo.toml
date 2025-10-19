@@ -9,6 +9,7 @@ license = "MIT"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins"]
 keywords = ["cargo", "binlist", "version", "plugin", "cli"]
+exclude = [".github/*", ".vscode/*", "scripts/*", "cliff.toml", "deny.toml", "typos.toml"]
 
 [dependencies]
 anyhow = "1"
