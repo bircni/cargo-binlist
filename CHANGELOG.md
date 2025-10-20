@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.3.0](https://github.com/bircni/cargo-binlist/compare/1.2.0..1.3.0) - 2025-10-20
+
+### Features
+
+- add uncondensed layout & correctly count the crates - ([3f43db7](https://github.com/bircni/cargo-binlist/commit/3f43db7199018ae3340b292add7186917b074341)) - Nicolas
+
+### Build
+
+- update Cargo.toml to exclude unnecessary files - ([58aad55](https://github.com/bircni/cargo-binlist/commit/58aad554a93224ea240b0504becc113df8cea959)) - Nicolas
+
 ## [1.2.0](https://github.com/bircni/cargo-binlist/compare/1.1.0..1.2.0) - 2025-09-15
 
 ### Continuous Integration
