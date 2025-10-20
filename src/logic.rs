@@ -3,6 +3,7 @@ use std::process::Command;
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
 use dialoguer::Confirm;
+use itertools::Itertools as _;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
 use semver::Version;
 use which::which;
@@ -87,12 +88,7 @@ pub fn version_occurrences(packages: &[PackageInfo]) {
 /// Helper function to parse a package line (e.g., "cargo-binstall v1.10.18:")
 pub fn parse_package_line(line: &str) -> anyhow::Result<PackageInfo> {
     let parts: Vec<&str> = line.split_whitespace().collect();
-    if parts.len() == 2
-        && parts
-            .get(1)
-            .context("Could not split parts correctly")?
-            .ends_with(':')
-    {
+    if parts.len() == 2 || parts.len() == 3 {
         let name = (*parts.first().context("Could not split parts correctly")?).to_owned();
         let version = Version::parse(
             &parts
@@ -101,10 +97,10 @@ pub fn parse_package_line(line: &str) -> anyhow::Result<PackageInfo> {
                 .trim_end_matches(':')
                 .replace('v', ""),
         )?;
-
+        log::warn!("Parsed package line {line}");
         return Ok(PackageInfo::new(name, version));
     }
-    anyhow::bail!("Invalid package line: {line}")
+    anyhow::bail!("Failed to parse package line: {line}")
 }
 
 /// Get the installed binaries
@@ -175,11 +171,12 @@ pub fn update(pkgs: &[PackageInfo], no_confirm: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool) {
+pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool, uncondensed: bool) {
     if pkg_vec.is_empty() {
         log::info!("No packages found");
         return;
     }
+    let len = pkg_vec.len();
     let table = if only_updates {
         let res = pkg_vec
             .into_iter()
@@ -191,16 +188,17 @@ pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool) {
         }
         log::info!("Packages with newer versions:");
 
-        create_table(&res)
+        create_table(&res, uncondensed)
     } else {
         log::info!("All installed packages:");
-        create_table(&pkg_vec)
+        create_table(&pkg_vec, uncondensed)
     };
 
     println!("{table}");
+    println!("Count: {len}");
 }
 
-fn create_table(pkgs: &[PackageInfo]) -> Table {
+fn create_table(pkgs: &[PackageInfo], uncondensed: bool) -> Table {
     let header = vec![
         Cell::new("Name").add_attribute(Attribute::Bold),
         Cell::new("Version").add_attribute(Attribute::Bold),
@@ -209,6 +207,12 @@ fn create_table(pkgs: &[PackageInfo]) -> Table {
 
     let rows = pkgs
         .iter()
+        .sorted_by(|a, b| {
+            // Show packages with updates first, then sort by name
+            let a_update = matches!(a.info, VersionCheck::NewerAvailable(_));
+            let b_update = matches!(b.info, VersionCheck::NewerAvailable(_));
+            b_update.cmp(&a_update).then_with(|| a.name.cmp(&b.name))
+        })
         .map(|pkg| {
             vec![
                 Cell::new(&pkg.name),
@@ -218,9 +222,14 @@ fn create_table(pkgs: &[PackageInfo]) -> Table {
         })
         .collect::<Vec<_>>();
 
+    let preset = if uncondensed {
+        presets::UTF8_FULL
+    } else {
+        presets::UTF8_FULL_CONDENSED
+    };
     let mut table = Table::new();
     table
-        .load_preset(presets::UTF8_FULL)
+        .load_preset(preset)
         .apply_modifier(modifiers::UTF8_ROUND_CORNERS)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(header)

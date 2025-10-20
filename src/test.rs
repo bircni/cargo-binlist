@@ -65,6 +65,7 @@ fn test_cli_list() {
     Cli::List(ListOpts {
         filter: LevelFilter::Trace,
         outdated: false,
+        uncondensed: false,
     })
     .run()
     .unwrap();

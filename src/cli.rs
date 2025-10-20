@@ -24,6 +24,9 @@ pub struct ListOpts {
     /// Show only outdated crates
     #[arg(short, long)]
     pub outdated: bool,
+    /// Use a uncondensed layout
+    #[arg(short, long)]
+    pub uncondensed: bool,
 }
 
 #[derive(Parser)]
@@ -71,6 +74,7 @@ impl Cli {
                 logic::list_pkgs(
                     packages.context("Failed to get installed binaries")?,
                     opt.outdated,
+                    opt.uncondensed,
                 );
             }
             Self::Update(opt) => {
