@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use anyhow::Context as _;
-use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
+use comfy_table::{modifiers, presets, Attribute, Cell, ContentArrangement, Table};
 use dialoguer::Confirm;
 use itertools::Itertools as _;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
@@ -97,7 +97,6 @@ pub fn parse_package_line(line: &str) -> anyhow::Result<PackageInfo> {
                 .trim_end_matches(':')
                 .replace('v', ""),
         )?;
-        log::warn!("Parsed package line {line}");
         return Ok(PackageInfo::new(name, version));
     }
     anyhow::bail!("Failed to parse package line: {line}")
