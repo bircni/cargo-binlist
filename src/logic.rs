@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use anyhow::Context as _;
-use comfy_table::{modifiers, presets, Attribute, Cell, ContentArrangement, Table};
+use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
 use dialoguer::Confirm;
 use itertools::Itertools as _;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};

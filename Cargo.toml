@@ -14,14 +14,14 @@ exclude = [".github/*", ".vscode/*", "scripts/*", "cliff.toml", "deny.toml", "ty
 [dependencies]
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
-comfy-table = "7.1"
+comfy-table = "7.2"
 crates_io_api = { version = "0.12", default-features = false, features = [
     "rustls",
 ] }
 dialoguer = "0.12"
 itertools = "0.14"
 log = "0.4"
-rayon = "1.10"
+rayon = "1.11"
 semver = "1"
 simplelog = "0.12"
 which = "8.0"
