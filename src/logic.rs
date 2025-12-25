@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{ffi::OsStr, process::Command};
 
 use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
@@ -47,6 +47,13 @@ pub fn init() -> anyhow::Result<()> {
 
 /// Function to parse the output of `cargo install --list`
 pub fn get_package_infos(output: &str) -> Vec<PackageInfo> {
+    get_package_infos_with_latest(output, super::data::PackageInfo::latest_version)
+}
+
+pub fn get_package_infos_with_latest<F>(output: &str, fetch_latest: F) -> Vec<PackageInfo>
+where
+    F: Fn(&PackageInfo) -> anyhow::Result<Version> + Sync,
+{
     let lines = output.lines();
 
     let mut packages: Vec<PackageInfo> = lines
@@ -55,7 +62,7 @@ pub fn get_package_infos(output: &str) -> Vec<PackageInfo> {
         .collect();
 
     packages.par_iter_mut().for_each(|pkg| {
-        if let Ok(latest) = pkg.latest_version() {
+        if let Ok(latest) = fetch_latest(pkg) {
             pkg.set_info(&latest);
         }
     });
@@ -104,10 +111,14 @@ pub fn parse_package_line(line: &str) -> anyhow::Result<PackageInfo> {
 
 /// Get the installed binaries
 pub fn get_installed_bins() -> anyhow::Result<String> {
-    let output = Command::new("cargo")
-        .arg("install")
-        .arg("--list")
-        .output()?;
+    get_installed_bins_with_cargo("cargo")
+}
+
+pub fn get_installed_bins_with_cargo<S>(cargo: S) -> anyhow::Result<String>
+where
+    S: AsRef<OsStr>,
+{
+    let output = Command::new(cargo).arg("install").arg("--list").output()?;
 
     if !output.status.success() {
         anyhow::bail!(
@@ -121,6 +132,13 @@ pub fn get_installed_bins() -> anyhow::Result<String> {
 
 /// Update the packages
 pub fn update(pkgs: &[PackageInfo], no_confirm: bool) -> anyhow::Result<()> {
+    update_with_cargo(pkgs, no_confirm, "cargo")
+}
+
+pub fn update_with_cargo<S>(pkgs: &[PackageInfo], no_confirm: bool, cargo: S) -> anyhow::Result<()>
+where
+    S: AsRef<OsStr>,
+{
     let packages = pkgs
         .iter()
         .filter(|pkg| matches!(pkg.info, VersionCheck::NewerAvailable(_)))
@@ -148,7 +166,7 @@ pub fn update(pkgs: &[PackageInfo], no_confirm: bool) -> anyhow::Result<()> {
 
     if pkgs.iter().any(|pkg| pkg.name == "cargo-binstall") {
         log::info!("Using cargo-binstall to update packages");
-        let output = Command::new("cargo")
+        let output = Command::new(cargo)
             .arg("binstall")
             .args(&packages)
             .arg("-y")
