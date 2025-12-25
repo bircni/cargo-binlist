@@ -1,13 +1,30 @@
 #![expect(clippy::unwrap_used, reason = "unwrap is used for testing purposes")]
+#[cfg(unix)]
+use std::{fs, path::Path};
+
 use comfy_table::{Attribute, Cell, Color};
 use log::LevelFilter;
 use semver::Version;
+#[cfg(unix)]
+use tempfile::TempDir;
 
 use crate::{
-    cli::{Cli, ListOpts},
+    cli::{Cli, ListOpts, Opts, UpdateOpts},
     data::{PackageInfo, VersionCheck},
     logic,
 };
+
+#[cfg(unix)]
+fn write_fake_cargo(dir: &Path, script: &str) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let path = dir.join("cargo");
+    fs::write(&path, script).unwrap();
+    let mut permissions = fs::metadata(&path).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&path, permissions).unwrap();
+    path
+}
 
 #[test]
 fn test_get_package_infos() {
@@ -25,7 +42,16 @@ cargo-edit v0.13.0:
     cargo-upgrade
 ";
 
-    let mut parsed = logic::get_package_infos(output);
+    let mut parsed = logic::get_package_infos_with_latest(output, |pkg| {
+        let version = match pkg.name.as_str() {
+            "cargo-binstall" => Version::new(1, 10, 18),
+            "cargo-bloat" => Version::new(0, 12, 2),
+            "cargo-deny" => Version::new(0, 16, 1),
+            "cargo-edit" => Version::new(0, 12, 9),
+            _ => return Err(anyhow::anyhow!("unexpected package")),
+        };
+        Ok(version)
+    });
     parsed.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(parsed.len(), 4);
     assert_eq!(parsed[0].name, "cargo-binstall");
@@ -36,8 +62,12 @@ cargo-edit v0.13.0:
     assert_eq!(parsed[2].version.to_string(), "0.16.1");
     assert_eq!(parsed[3].name, "cargo-edit");
     assert_eq!(parsed[3].version.to_string(), "0.13.0");
-}
 
+    assert!(matches!(parsed[0].info, VersionCheck::UpToDate));
+    assert!(matches!(parsed[1].info, VersionCheck::NewerAvailable(_)));
+    assert!(matches!(parsed[2].info, VersionCheck::UpToDate));
+    assert!(matches!(parsed[3].info, VersionCheck::LocalNewer));
+}
 #[test]
 fn test_parse_package_line() {
     let line = "tester v1.10.18:";
@@ -47,33 +77,140 @@ fn test_parse_package_line() {
 }
 
 #[test]
+fn test_parse_package_line_invalid() {
+    let line = "not a package line";
+    let err = logic::parse_package_line(line).err().unwrap();
+    assert!(err.to_string().contains("Failed to parse package line"));
+}
+
+#[test]
 fn test_packageinfo() {
-    let mut pkg = PackageInfo::new("serde".to_owned(), Version::new(0, 0, 1));
-    let latest = pkg.latest_version().unwrap();
-    assert!(latest > pkg.version);
-    pkg.set_info(&latest);
-    assert_eq!(pkg.info, VersionCheck::NewerAvailable(latest));
-}
+    let mut pkg = PackageInfo::new("serde".to_owned(), Version::new(1, 0, 0));
+    pkg.set_info(&Version::new(1, 0, 1));
+    assert!(matches!(pkg.info, VersionCheck::NewerAvailable(_)));
 
-#[test]
-fn test_get_installed_bins() {
-    logic::get_installed_bins().unwrap();
-}
+    pkg.set_info(&Version::new(1, 0, 0));
+    assert_eq!(pkg.info, VersionCheck::UpToDate);
 
-#[test]
-fn test_cli_list() {
-    Cli::List(ListOpts {
-        filter: LevelFilter::Trace,
-        outdated: false,
-        uncondensed: false,
-    })
-    .run()
-    .unwrap();
+    pkg.set_info(&Version::new(0, 9, 9));
+    assert_eq!(pkg.info, VersionCheck::LocalNewer);
 }
 
 #[test]
 fn test_cli_update() {
     logic::update(&[], true).unwrap();
+}
+
+#[test]
+#[cfg(unix)]
+fn test_get_installed_bins_uses_fake_cargo() {
+    let temp_dir = TempDir::new().unwrap();
+    let script = r#"#!/bin/sh
+if [ "$1" = "install" ] && [ "$2" = "--list" ]; then
+  echo "cargo-binstall v1.10.18:"
+  exit 0
+fi
+echo "unexpected args" >&2
+exit 1
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+
+    let output = logic::get_installed_bins_with_cargo(&cargo_path).unwrap();
+    assert!(output.contains("cargo-binstall v1.10.18:"));
+}
+
+#[test]
+#[cfg(unix)]
+fn test_update_uses_fake_cargo_binstall() {
+    let temp_dir = TempDir::new().unwrap();
+    let log_path = temp_dir.path().join("cargo_log.txt");
+    let script = r#"#!/bin/sh
+script_dir=$(dirname "$0")
+printf "%s\n" "$@" > "$script_dir/cargo_log.txt"
+exit 0
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+
+    let packages = vec![
+        PackageInfo {
+            name: "cargo-binstall".to_owned(),
+            version: Version::new(1, 0, 0),
+            info: VersionCheck::NewerAvailable(Version::new(1, 1, 0)),
+        },
+        PackageInfo {
+            name: "cargo-deny".to_owned(),
+            version: Version::new(0, 16, 0),
+            info: VersionCheck::NewerAvailable(Version::new(0, 16, 1)),
+        },
+    ];
+
+    logic::update_with_cargo(&packages, true, &cargo_path).unwrap();
+
+    let logged = fs::read_to_string(&log_path).unwrap();
+    let args = logged.lines().collect::<Vec<_>>();
+    assert_eq!(args, vec!["binstall", "cargo-binstall", "cargo-deny", "-y"]);
+}
+
+#[test]
+#[cfg(unix)]
+fn test_get_installed_bins_error_when_cargo_fails() {
+    let temp_dir = TempDir::new().unwrap();
+    let script = r#"#!/bin/sh
+echo "boom" >&2
+exit 1
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+
+    let err = logic::get_installed_bins_with_cargo(&cargo_path)
+        .err()
+        .unwrap();
+    assert!(err.to_string().contains("Failed to get installed binaries"));
+    assert!(err.to_string().contains("boom"));
+}
+
+#[test]
+#[cfg(unix)]
+fn test_update_skips_when_cargo_binstall_missing() {
+    let temp_dir = TempDir::new().unwrap();
+    let log_path = temp_dir.path().join("cargo_log.txt");
+    let script = r#"#!/bin/sh
+script_dir=$(dirname "$0")
+printf "%s\n" "$@" > "$script_dir/cargo_log.txt"
+exit 0
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+
+    let packages = vec![PackageInfo {
+        name: "cargo-deny".to_owned(),
+        version: Version::new(0, 16, 0),
+        info: VersionCheck::NewerAvailable(Version::new(0, 16, 1)),
+    }];
+
+    logic::update_with_cargo(&packages, true, &cargo_path).unwrap();
+
+    assert!(!log_path.exists());
+}
+
+#[test]
+#[cfg(unix)]
+fn test_update_returns_error_on_cargo_failure() {
+    let temp_dir = TempDir::new().unwrap();
+    let script = r#"#!/bin/sh
+echo "nope" >&2
+exit 1
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+
+    let packages = vec![PackageInfo {
+        name: "cargo-binstall".to_owned(),
+        version: Version::new(1, 0, 0),
+        info: VersionCheck::NewerAvailable(Version::new(1, 1, 0)),
+    }];
+
+    let err = logic::update_with_cargo(&packages, true, &cargo_path)
+        .err()
+        .unwrap();
+    assert!(err.to_string().contains("Failed to update packages"));
 }
 
 #[test]
@@ -111,4 +248,50 @@ fn test_colored_cell() {
     let cell = VersionCheck::UpToDate.colored_cell();
     assert_eq!(cell.content(), "Up to date");
     assert_eq!(cell, up_to_date_cell);
+}
+
+#[test]
+fn test_needs_binlist() {
+    assert!(
+        Cli::List(ListOpts {
+            filter: LevelFilter::Info,
+            outdated: false,
+            uncondensed: false,
+        })
+        .needs_binlist()
+    );
+    assert!(
+        Cli::Update(UpdateOpts {
+            filter: LevelFilter::Warn,
+            no_confirm: true,
+        })
+        .needs_binlist()
+    );
+    assert!(
+        !Cli::Init(Opts {
+            filter: LevelFilter::Error,
+        })
+        .needs_binlist()
+    );
+}
+
+#[test]
+fn test_get_filter() {
+    let list = Cli::List(ListOpts {
+        filter: LevelFilter::Trace,
+        outdated: false,
+        uncondensed: false,
+    });
+    assert_eq!(list.get_filter(), LevelFilter::Trace);
+
+    let update = Cli::Update(UpdateOpts {
+        filter: LevelFilter::Debug,
+        no_confirm: true,
+    });
+    assert_eq!(update.get_filter(), LevelFilter::Debug);
+
+    let init = Cli::Init(Opts {
+        filter: LevelFilter::Warn,
+    });
+    assert_eq!(init.get_filter(), LevelFilter::Warn);
 }

@@ -47,11 +47,11 @@ pub struct Opts {
 }
 
 impl Cli {
-    const fn needs_binlist(&self) -> bool {
+    pub const fn needs_binlist(&self) -> bool {
         !matches!(self, Self::Init(_))
     }
 
-    const fn get_filter(&self) -> LevelFilter {
+    pub const fn get_filter(&self) -> LevelFilter {
         match self {
             Self::List(opts) => opts.filter,
             Self::Update(opts) => opts.filter,

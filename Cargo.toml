@@ -26,6 +26,9 @@ semver = "1"
 simplelog = "0.12"
 which = "8.0"
 
+[dev-dependencies]
+tempfile = "3.12"
+
 [lints.rust]
 unsafe_code = "deny"
 deprecated = "warn"
