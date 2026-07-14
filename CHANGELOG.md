@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## [1.3.2](https://github.com/bircni/cargo-binlist/compare/1.3.1..1.3.2) - 2026-07-14
+
+### Tests
+
+- Enhance test coverage - ([8c313f2](https://github.com/bircni/cargo-binlist/commit/8c313f24bc49d7e8183ec3e6baf82d283f2e3884)) - Nicolas
+
+### Build
+
+- **(deps)** Update dependencies - ([e609571](https://github.com/bircni/cargo-binlist/commit/e609571d7e78228b302ef25461cf417892cf32a0)) - Nicolas
+- **(deps)** Update dependencies (#10) - ([fb6b810](https://github.com/bircni/cargo-binlist/commit/fb6b810cc31001819edfd8fd5f503ad909c5ae5d)) - bircni
+
 ## [1.3.1](https://github.com/bircni/cargo-binlist/compare/1.3.0..1.3.1) - 2025-10-20
 
 ### Bug Fixes
