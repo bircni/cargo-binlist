@@ -13,21 +13,21 @@ exclude = [".github/*", ".vscode/*", "scripts/*", "cliff.toml", "deny.toml", "ty
 
 [dependencies]
 anyhow = "1"
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 comfy-table = "7.2"
 crates_io_api = { version = "0.12", default-features = false, features = [
     "rustls",
 ] }
 dialoguer = "0.12"
-itertools = "0.14"
+itertools = "0.15"
 log = "0.4"
-rayon = "1.11"
+rayon = "1.12"
 semver = "1"
 simplelog = "0.12"
 which = "8.0"
 
 [dev-dependencies]
-tempfile = "3.12"
+tempfile = "3.27"
 
 [lints.rust]
 unsafe_code = "deny"
