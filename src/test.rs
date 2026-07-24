@@ -10,7 +10,7 @@ use tempfile::TempDir;
 
 use crate::{
     cli::{Cli, ListOpts, Opts, UpdateOpts},
-    data::{PackageInfo, VersionCheck},
+    data::{PackageInfo, VersionCheck, latest_installable_version},
     logic,
 };
 
@@ -123,6 +123,29 @@ fn test_packageinfo() {
 
     pkg.set_info(&Version::new(0, 9, 9));
     assert_eq!(pkg.info, VersionCheck::LocalNewer);
+}
+
+#[test]
+fn test_latest_installable_version_ignores_prereleases() {
+    let mut pkg = PackageInfo::new("dioxus-cli".to_owned(), Version::new(0, 7, 9));
+    let latest = latest_installable_version("0.8.0-alpha.0", Some("0.7.9")).unwrap();
+
+    pkg.set_info(&latest);
+
+    assert_eq!(latest, Version::new(0, 7, 9));
+    assert_eq!(pkg.info, VersionCheck::UpToDate);
+}
+
+#[test]
+fn test_latest_installable_version_requires_a_stable_release() {
+    let err = latest_installable_version("1.0.0-alpha.1", None)
+        .err()
+        .unwrap();
+
+    assert!(
+        err.to_string().contains("No stable version is available"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
