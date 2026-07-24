@@ -215,7 +215,7 @@ pub fn list_pkgs(pkg_vec: Vec<PackageInfo>, only_updates: bool, uncondensed: boo
     println!("Count: {len}");
 }
 
-fn create_table(pkgs: &[PackageInfo], uncondensed: bool) -> Table {
+pub fn create_table(pkgs: &[PackageInfo], uncondensed: bool) -> Table {
     let header = vec![
         Cell::new("Name").add_attribute(Attribute::Bold),
         Cell::new("Version").add_attribute(Attribute::Bold),

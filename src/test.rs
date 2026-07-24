@@ -68,6 +68,24 @@ cargo-edit v0.13.0:
     assert!(matches!(parsed[2].info, VersionCheck::UpToDate));
     assert!(matches!(parsed[3].info, VersionCheck::LocalNewer));
 }
+
+#[test]
+fn test_get_package_infos_ignores_invalid_lines_and_failed_lookups() {
+    let output = r"
+not a package
+cargo-deny v0.16.1:
+    cargo-deny
+";
+
+    let parsed = logic::get_package_infos_with_latest(output, |_| {
+        Err(anyhow::anyhow!("crate is unavailable"))
+    });
+
+    assert_eq!(parsed.len(), 1);
+    assert_eq!(parsed[0].name, "cargo-deny");
+    assert_eq!(parsed[0].info, VersionCheck::UnAvailable);
+}
+
 #[test]
 fn test_parse_package_line() {
     let line = "tester v1.10.18:";
@@ -81,6 +99,17 @@ fn test_parse_package_line_invalid() {
     let line = "not a package line";
     let err = logic::parse_package_line(line).err().unwrap();
     assert!(err.to_string().contains("Failed to parse package line"));
+}
+
+#[test]
+fn test_parse_package_line_invalid_version() {
+    let err = logic::parse_package_line("tester not-a-version:")
+        .err()
+        .unwrap();
+    assert!(
+        err.to_string().contains("unexpected character"),
+        "unexpected parse error: {err}"
+    );
 }
 
 #[test]
@@ -99,6 +128,35 @@ fn test_packageinfo() {
 #[test]
 fn test_cli_update() {
     logic::update(&[], true).unwrap();
+}
+
+#[test]
+#[cfg(unix)]
+fn test_update_ignores_packages_without_updates() {
+    let temp_dir = TempDir::new().unwrap();
+    let log_path = temp_dir.path().join("cargo_log.txt");
+    let script = r#"#!/bin/sh
+script_dir=$(dirname "$0")
+printf "%s\n" "$@" > "$script_dir/cargo_log.txt"
+exit 0
+"#;
+    let cargo_path = write_fake_cargo(temp_dir.path(), script);
+    let packages = vec![
+        PackageInfo {
+            name: "cargo-binstall".to_owned(),
+            version: Version::new(1, 0, 0),
+            info: VersionCheck::UpToDate,
+        },
+        PackageInfo {
+            name: "cargo-deny".to_owned(),
+            version: Version::new(0, 16, 1),
+            info: VersionCheck::LocalNewer,
+        },
+    ];
+
+    logic::update_with_cargo(&packages, true, &cargo_path).unwrap();
+
+    assert!(!log_path.exists());
 }
 
 #[test]
@@ -216,13 +274,79 @@ exit 1
 #[test]
 fn test_version_occurrences() {
     let pkgs = vec![
-        PackageInfo::new("cargo-binstall".to_owned(), Version::new(1, 10, 18)),
-        PackageInfo::new("cargo-bloat".to_owned(), Version::new(0, 12, 1)),
-        PackageInfo::new("cargo-deny".to_owned(), Version::new(0, 16, 1)),
+        PackageInfo {
+            name: "cargo-binstall".to_owned(),
+            version: Version::new(1, 10, 18),
+            info: VersionCheck::NewerAvailable(Version::new(1, 10, 19)),
+        },
+        PackageInfo {
+            name: "cargo-bloat".to_owned(),
+            version: Version::new(0, 12, 1),
+            info: VersionCheck::UpToDate,
+        },
+        PackageInfo {
+            name: "cargo-deny".to_owned(),
+            version: Version::new(0, 16, 1),
+            info: VersionCheck::LocalNewer,
+        },
         PackageInfo::new("cargo-edit".to_owned(), Version::new(0, 13, 0)),
     ];
 
     logic::version_occurrences(&pkgs);
+}
+
+#[test]
+fn test_create_table_sorts_updates_first_and_supports_both_layouts() {
+    let packages = vec![
+        PackageInfo {
+            name: "z-current".to_owned(),
+            version: Version::new(1, 0, 0),
+            info: VersionCheck::UpToDate,
+        },
+        PackageInfo {
+            name: "b-update".to_owned(),
+            version: Version::new(1, 0, 0),
+            info: VersionCheck::NewerAvailable(Version::new(1, 1, 0)),
+        },
+        PackageInfo {
+            name: "a-update".to_owned(),
+            version: Version::new(1, 0, 0),
+            info: VersionCheck::NewerAvailable(Version::new(1, 2, 0)),
+        },
+    ];
+
+    let condensed = logic::create_table(&packages, false).to_string();
+    let uncondensed = logic::create_table(&packages, true).to_string();
+
+    let first_update = condensed.find("a-update").unwrap();
+    let second_update = condensed.find("b-update").unwrap();
+    let current = condensed.find("z-current").unwrap();
+    assert!(
+        first_update < second_update && second_update < current,
+        "packages were not ordered correctly:\n{condensed}"
+    );
+    assert!(
+        uncondensed.lines().count() > condensed.lines().count(),
+        "uncondensed layout should use more table rows"
+    );
+}
+
+#[test]
+fn test_list_pkgs_handles_filters_and_empty_results() {
+    let current = PackageInfo {
+        name: "cargo-current".to_owned(),
+        version: Version::new(1, 0, 0),
+        info: VersionCheck::UpToDate,
+    };
+    let update = PackageInfo {
+        name: "cargo-update".to_owned(),
+        version: Version::new(1, 0, 0),
+        info: VersionCheck::NewerAvailable(Version::new(1, 1, 0)),
+    };
+
+    logic::list_pkgs(Vec::new(), false, false);
+    logic::list_pkgs(vec![current], true, false);
+    logic::list_pkgs(vec![update], true, true);
 }
 
 #[test]
