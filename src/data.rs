@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, time::Duration};
 
+use anyhow::Context as _;
 use comfy_table::{Attribute, Cell, Color};
 use crates_io_api::SyncClient;
 use semver::Version;
@@ -64,7 +65,19 @@ impl PackageInfo {
         let client = SyncClient::new("cargo-binlist", Duration::from_secs(1))?;
         log::debug!("Fetching latest version for {}", self.name);
         let cr = client.get_crate(&self.name)?;
-        let version = Version::parse(&cr.crate_data.max_version)?;
-        Ok(version)
+        latest_installable_version(
+            &cr.crate_data.max_version,
+            cr.crate_data.max_stable_version.as_deref(),
+        )
     }
+}
+
+pub fn latest_installable_version(
+    max_version: &str,
+    max_stable_version: Option<&str>,
+) -> anyhow::Result<Version> {
+    let version = max_stable_version.with_context(|| {
+        format!("No stable version is available; latest release is {max_version}")
+    })?;
+    Version::parse(version).context("Failed to parse latest stable version")
 }
