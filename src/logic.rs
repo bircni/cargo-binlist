@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, process::Command};
 
 use anyhow::Context as _;
-use comfy_table::{Attribute, Cell, ContentArrangement, Table, modifiers, presets};
+use comfy_table::{Attribute, Cell, ContentArrangement, Table, presets};
 use dialoguer::Confirm;
 use itertools::Itertools as _;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelBridge, ParallelIterator as _};
@@ -246,8 +246,7 @@ pub fn create_table(pkgs: &[PackageInfo], uncondensed: bool) -> Table {
     };
     let mut table = Table::new();
     table
-        .load_preset(preset)
-        .apply_modifier(modifiers::UTF8_ROUND_CORNERS)
+        .load_style(preset.with_rounded_corners())
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(header)
         .add_rows(rows);
