@@ -1,154 +1,190 @@
+//! End-to-end tests of the binary. They only use git and path installs, so no
+//! network access is needed.
 #![expect(clippy::unwrap_used, reason = "unwrap is used for test setup")]
 
-#[cfg(unix)]
-use std::fs;
 use std::{
-    env,
+    fs,
     path::Path,
     process::{Command, Output},
 };
-#[cfg(unix)]
+
 use tempfile::TempDir;
+
+const OFFLINE_INSTALLS: &str = r#"{
+  "installs": {
+    "my-tool 0.1.0 (path+file:///home/me/my-tool)": { "bins": ["my-tool"] },
+    "other 2.0.0 (git+https://example.com/other#abc123)": { "bins": ["other"] }
+  }
+}"#;
 
 fn run(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_cargo-binlist"))
         .args(args)
+        .env_remove("CARGO_INSTALL_ROOT")
         .output()
         .unwrap()
 }
 
-#[cfg(unix)]
-fn write_executable(dir: &Path, name: &str, script: &str) {
-    use std::os::unix::fs::PermissionsExt as _;
-
-    let path = dir.join(name);
-    fs::write(&path, script).unwrap();
-    let mut permissions = fs::metadata(&path).unwrap().permissions();
-    permissions.set_mode(0o755);
-    fs::set_permissions(path, permissions).unwrap();
+fn root_with(metadata: Option<&str>) -> TempDir {
+    let dir = TempDir::new().unwrap();
+    if let Some(metadata) = metadata {
+        fs::write(dir.path().join(".crates2.json"), metadata).unwrap();
+    }
+    dir
 }
 
-#[cfg(unix)]
-fn run_with_path(args: &[&str], path_prefix: &Path) -> Output {
-    let current_path = env::var_os("PATH").unwrap();
-    let path = env::join_paths(
-        std::iter::once(path_prefix.to_path_buf()).chain(env::split_paths(&current_path)),
-    )
-    .unwrap();
+fn run_in(root: &Path, args: &[&str]) -> Output {
+    let mut all = args.to_vec();
+    all.extend(["--root", root.to_str().unwrap()]);
+    run(&all)
+}
 
-    Command::new(env!("CARGO_BIN_EXE_cargo-binlist"))
-        .args(args)
-        .env("PATH", path)
-        .output()
-        .unwrap()
+fn stdout(output: &Output) -> String {
+    String::from_utf8_lossy(&output.stdout).into_owned()
+}
+
+fn stderr(output: &Output) -> String {
+    String::from_utf8_lossy(&output.stderr).into_owned()
 }
 
 #[test]
 fn cargo_subcommand_help_is_available() {
     let output = run(&["binlist", "--help"]);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
     assert!(output.status.success(), "help failed: {output:?}");
     assert!(
-        stdout.contains("List all installed binaries"),
-        "unexpected help output: {stdout}"
+        stdout(&output).contains("List all installed binaries"),
+        "unexpected help output: {}",
+        stdout(&output)
     );
 }
 
 #[test]
 fn version_is_available() {
     let output = run(&["--version"]);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
     assert!(output.status.success(), "version failed: {output:?}");
     assert!(
-        stdout.contains(env!("CARGO_PKG_VERSION")),
-        "unexpected version output: {stdout}"
+        stdout(&output).contains(env!("CARGO_PKG_VERSION")),
+        "unexpected version output: {}",
+        stdout(&output)
     );
 }
 
 #[test]
 fn invalid_subcommand_is_rejected() {
     let output = run(&["unknown"]);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
     assert!(
         !output.status.success(),
         "invalid command unexpectedly passed"
     );
     assert!(
-        stderr.contains("unrecognized subcommand"),
-        "unexpected error output: {stderr}"
+        stderr(&output).contains("unrecognized subcommand"),
+        "unexpected error output: {}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn list_is_the_default_command() {
+    let root = root_with(None);
+    let output = run_in(root.path(), &[]);
+    assert!(output.status.success(), "list failed: {output:?}");
+    assert_eq!(stdout(&output).trim(), "No packages installed");
+}
+
+#[test]
+fn list_shows_skipped_git_and_path_installs() {
+    let root = root_with(Some(OFFLINE_INSTALLS));
+    let output = run_in(root.path(), &["list"]);
+    let out = stdout(&output);
+
+    assert!(output.status.success(), "list failed: {output:?}");
+    assert!(out.contains("skipped (path)"), "unexpected output: {out}");
+    assert!(out.contains("skipped (git)"), "unexpected output: {out}");
+    assert!(
+        out.contains("2 packages, 0 outdated"),
+        "unexpected output: {out}"
+    );
+}
+
+#[test]
+fn list_outputs_json() {
+    let root = root_with(Some(OFFLINE_INSTALLS));
+    let output = run_in(root.path(), &["list", "--json"]);
+    assert!(output.status.success(), "list failed: {output:?}");
+
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let rows = json.as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0]["name"], "my-tool");
+    assert_eq!(rows[0]["source"]["kind"], "path");
+    assert_eq!(rows[0]["status"], "skipped");
+}
+
+#[test]
+fn check_succeeds_when_nothing_is_outdated() {
+    let root = root_with(Some(OFFLINE_INSTALLS));
+    let output = run_in(root.path(), &["check"]);
+    assert!(output.status.success(), "check failed: {output:?}");
+    assert_eq!(stdout(&output).trim(), "All packages are up to date");
+}
+
+#[test]
+fn update_does_nothing_when_nothing_is_outdated() {
+    let root = root_with(Some(OFFLINE_INSTALLS));
+    let output = run_in(root.path(), &["update", "--yes"]);
+    assert!(output.status.success(), "update failed: {output:?}");
+    assert_eq!(stdout(&output).trim(), "All packages are up to date");
+}
+
+#[test]
+fn update_rejects_unknown_packages() {
+    let root = root_with(Some(OFFLINE_INSTALLS));
+    let output = run_in(root.path(), &["update", "nope"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        stderr(&output).contains("Package `nope` is not installed"),
+        "unexpected error output: {}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn reports_invalid_metadata() {
+    let root = root_with(Some("{ not json"));
+    let output = run_in(root.path(), &["list"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        stderr(&output).contains("Failed to parse"),
+        "unexpected error output: {}",
+        stderr(&output)
     );
 }
 
 #[test]
 #[cfg(unix)]
 fn init_succeeds_when_cargo_binstall_is_available() {
-    let temp_dir = TempDir::new().unwrap();
-    write_executable(temp_dir.path(), "cargo-binstall", "#!/bin/sh\nexit 0\n");
+    use std::{env, os::unix::fs::PermissionsExt as _};
 
-    let output = run_with_path(&["init"], temp_dir.path());
+    let dir = TempDir::new().unwrap();
+    let binstall = dir.path().join("cargo-binstall");
+    fs::write(&binstall, "#!/bin/sh\nexit 0\n").unwrap();
+    fs::set_permissions(&binstall, fs::Permissions::from_mode(0o755)).unwrap();
+    let path = env::join_paths(
+        std::iter::once(dir.path().to_path_buf())
+            .chain(env::split_paths(&env::var_os("PATH").unwrap())),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_cargo-binlist"))
+        .arg("init")
+        .env("PATH", path)
+        .output()
+        .unwrap();
 
     assert!(output.status.success(), "init failed: {output:?}");
-}
-
-#[test]
-#[cfg(unix)]
-fn list_handles_an_empty_installation() {
-    let temp_dir = TempDir::new().unwrap();
-    write_executable(
-        temp_dir.path(),
-        "cargo",
-        "#!/bin/sh\n[ \"$1\" = install ] && [ \"$2\" = --list ]\n",
-    );
-
-    let output = run_with_path(&["list"], temp_dir.path());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    assert!(output.status.success(), "list failed: {output:?}");
     assert!(
-        stdout.contains("No packages found"),
-        "unexpected list output: {stdout}"
-    );
-}
-
-#[test]
-#[cfg(unix)]
-fn update_handles_an_empty_installation() {
-    let temp_dir = TempDir::new().unwrap();
-    write_executable(
-        temp_dir.path(),
-        "cargo",
-        "#!/bin/sh\n[ \"$1\" = install ] && [ \"$2\" = --list ]\n",
-    );
-
-    let output = run_with_path(&["update", "--no-confirm"], temp_dir.path());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    assert!(output.status.success(), "update failed: {output:?}");
-    assert!(
-        stdout.contains("No packages to update"),
-        "unexpected update output: {stdout}"
-    );
-}
-
-#[test]
-#[cfg(unix)]
-fn list_reports_cargo_failures() {
-    let temp_dir = TempDir::new().unwrap();
-    write_executable(
-        temp_dir.path(),
-        "cargo",
-        "#!/bin/sh\necho boom >&2\nexit 1\n",
-    );
-
-    let output = run_with_path(&["list"], temp_dir.path());
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
-    assert_eq!(output.status.code(), Some(1));
-    assert!(
-        stderr.contains("Failed to get installed binaries: boom"),
-        "unexpected failure output: {stderr}"
+        stdout(&output).contains("already installed"),
+        "unexpected output: {}",
+        stdout(&output)
     );
 }

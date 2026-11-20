@@ -14,7 +14,7 @@ jobs:
 
       - name: Build cargo-binlist
         run: |
-          cargo build --release
+          cargo build --release --locked
 
       - name: Get the version
         shell: bash
@@ -43,10 +43,13 @@ jobs:
   create-unix-binaries:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+          - os: macos-latest
+            target: aarch64-apple-darwin
           - os: macos-latest
             target: x86_64-apple-darwin
 
@@ -63,15 +66,12 @@ jobs:
       - name: Install musl
         if: contains(matrix.target, 'linux-musl')
         run: |
-          sudo apt-get install musl-tools
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
 
       - name: Build cargo-binlist
         run: |
-          cargo build --release --target ${{ matrix.target }}
-
-      - name: Strip binary
-        run: |
-          strip target/${{ matrix.target }}/release/cargo-binlist
+          cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Get the version
         id: tagName
@@ -104,10 +104,6 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Create Cargo.lock
-        run: |
-          cargo update
 
       - name: Get version
         id: tagName

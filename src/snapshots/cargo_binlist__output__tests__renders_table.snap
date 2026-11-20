@@ -1,0 +1,12 @@
+---
+source: src/output.rs
+expression: "table(&refs, false).to_string()"
+---
+╭────────────┬───────────┬────────┬──────────────────╮
+│ Name       ┆ Installed ┆ Latest ┆ Status           │
+╞════════════╪═══════════╪════════╪══════════════════╡
+│ cargo-deny ┆ 1.0.0     ┆ 1.2.0  ┆ update available │
+│ bat        ┆ 1.0.0     ┆ 1.0.0  ┆ up to date       │
+│ local      ┆ 1.0.0     ┆ -      ┆ skipped (path)   │
+│ flaky      ┆ 1.0.0     ┆ -      ┆ lookup failed    │
+╰────────────┴───────────┴────────┴──────────────────╯
