@@ -1,29 +1,32 @@
-use std::{
-    env,
-    process::{self},
-};
+//! `cargo binlist`: list and update binaries installed with `cargo install`.
+
+use std::{env, process::ExitCode};
 
 use clap::Parser as _;
-use cli::Cli;
+
+use crate::cli::Cli;
 
 mod cli;
-mod data;
-mod logic;
-#[cfg(test)]
-mod test;
+mod install;
+mod output;
+mod package;
+mod registry;
+mod update;
 
-fn main() {
-    match real_main() {
-        Ok(()) => {}
+fn main() -> ExitCode {
+    let cli = Cli::parse_from(cli::normalize_args(env::args_os()));
+
+    env_logger::Builder::new()
+        .filter_module(env!("CARGO_CRATE_NAME"), cli.verbosity.log_level_filter())
+        .format_timestamp(None)
+        .format_target(false)
+        .init();
+
+    match cli.run() {
+        Ok(code) => code,
         Err(e) => {
-            log::error!("{e:#}");
-            process::exit(1);
+            eprintln!("error: {e:#}");
+            ExitCode::FAILURE
         }
     }
-}
-
-fn real_main() -> anyhow::Result<()> {
-    Cli::parse_from(env::args().filter(|a| a != "binlist")).run()?;
-
-    Ok(())
 }

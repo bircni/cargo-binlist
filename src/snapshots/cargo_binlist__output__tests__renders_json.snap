@@ -1,0 +1,41 @@
+---
+source: src/output.rs
+expression: json(&refs).unwrap()
+---
+[
+  {
+    "name": "cargo-deny",
+    "version": "1.0.0",
+    "source": {
+      "kind": "crates_io"
+    },
+    "status": "outdated",
+    "latest": "1.2.0"
+  },
+  {
+    "name": "bat",
+    "version": "1.0.0",
+    "source": {
+      "kind": "crates_io"
+    },
+    "status": "up_to_date"
+  },
+  {
+    "name": "local",
+    "version": "1.0.0",
+    "source": {
+      "kind": "path",
+      "location": "/src/local"
+    },
+    "status": "skipped"
+  },
+  {
+    "name": "flaky",
+    "version": "1.0.0",
+    "source": {
+      "kind": "crates_io"
+    },
+    "status": "error",
+    "message": "timeout"
+  }
+]
